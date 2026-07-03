@@ -1,0 +1,8 @@
+# Meta-Agent Math Debate System - Frontend Requirements
+
+# Static file serving (if using Python server)
+http-server==0.12.3
+
+# Development tools (optional)
+live-server==1.2.0
+
