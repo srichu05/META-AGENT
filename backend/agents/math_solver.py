@@ -7,6 +7,7 @@ ENHANCED (2025-11-05):
 - GSM8K-friendly output parsing (SOLUTION + FINAL ANSWER)
 """
 
+# TODO(Draft 2): Retain this prototype solver until dedicated solver agents are added.
 import re
 import logging
 from typing import Dict, List, Any, Optional

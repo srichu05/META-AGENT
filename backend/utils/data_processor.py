@@ -12,6 +12,8 @@ PRO VERSION (Sri build):
 Compatible with Meta-Agent Math Debate System.
 """
 
+# TODO(Draft 2): Continue serving the JSON/CSV corpus until PostgreSQL-backed
+# document ingestion is implemented in a later session.
 import json
 import csv
 import os

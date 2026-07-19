@@ -1,6 +1,9 @@
 """
-Configuration file for Meta-Agent Math Debate System
-Handles API configs, system paths, RAG settings & Local LLM setup.
+Legacy configuration module retained during the Draft 2 migration.
+
+TODO(Draft 2): Import configuration from the ``config`` package. Python now
+resolves that package before this compatibility file, so existing imports keep
+working while new configuration is centralized in ``config/settings.py``.
 """
 
 import os

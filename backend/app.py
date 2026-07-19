@@ -23,9 +23,16 @@ from models.meta_agent import MetaAgent
 from utils.data_processor import DataProcessor
 from utils.logger import setup_logger
 from config import SYSTEM_CONFIG
+from database import init_database
 
 # --- Flask App Initialization ---
 app = Flask(__name__)
+app.config.update(
+    SECRET_KEY=SYSTEM_CONFIG["secret_key"],
+    SQLALCHEMY_DATABASE_URI=SYSTEM_CONFIG["database_url"],
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+)
+init_database(app)
 
 # CORS (single init is enough)
 allowed_origins = [
@@ -44,9 +51,6 @@ CORS(
     supports_credentials=True,
     max_age=3600,
 )
-
-# Secret key
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-fallback-key-change-in-production")
 
 logger = setup_logger(__name__)
 

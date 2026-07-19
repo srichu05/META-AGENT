@@ -89,7 +89,6 @@ tmp/
 # AI MODELS
 # =====================================================================
 models/hf-local/
-backend/models/
 *.safetensors
 *.bin
 *.pt

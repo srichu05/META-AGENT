@@ -3,6 +3,7 @@ Judge Agent - Evaluates solutions from multiple agents and selects the best one
 (Optimized Light Upgrade for Meta-Agent + Math Solver Compatibility)
 """
 
+# TODO(Draft 2): Retain this prototype judge until the graph workflow is added.
 import re
 import logging
 from typing import Dict, List, Any, Optional

@@ -3,6 +3,7 @@ Retriever Agent - Handles RAG retrieval of similar problems and solutions
 UPDATED (Hybrid Compatible) – Works with Local Embeddings + Cloud Fallback
 """
 
+# TODO(Draft 2): Retain this custom retriever until the hybrid RAG pipeline is added.
 from typing import List, Dict, Any, Optional
 import logging
 import re

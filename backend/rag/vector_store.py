@@ -4,6 +4,7 @@ Handles document embeddings and similarity search
 UPDATED: Optimized for GSM8K external corpus integration
 """
 
+# TODO(Draft 2): Replace this custom store with FAISS in the dedicated RAG phase.
 import numpy as np
 import json
 import pickle

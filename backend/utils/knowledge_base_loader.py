@@ -3,6 +3,9 @@ Knowledge Base Loader for RAG System
 Supports: Custom JSON, GSM8K, CSV
 """
 
+# TODO(Draft 2): GSM8K loading is legacy-only. Future ingestion accepts user
+# documents and must not use GSM8K as the primary knowledge source.
+
 import json
 import csv
 import os

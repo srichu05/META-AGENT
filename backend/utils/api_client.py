@@ -10,6 +10,7 @@ UPDATED:
 - No provider attempt history
 """
 
+# TODO(Draft 2): Keep this compatibility client until ProviderRouter owns calls.
 from __future__ import annotations
 
 import os
