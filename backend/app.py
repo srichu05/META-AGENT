@@ -24,6 +24,7 @@ from utils.data_processor import DataProcessor
 from utils.logger import setup_logger
 from config import SYSTEM_CONFIG
 from database import init_database
+from api.documents import documents_blueprint
 
 # --- Flask App Initialization ---
 app = Flask(__name__)
@@ -33,6 +34,8 @@ app.config.update(
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
 )
 init_database(app)
+app.config["MAX_CONTENT_LENGTH"] = SYSTEM_CONFIG["max_upload_file_size_bytes"]
+app.register_blueprint(documents_blueprint)
 
 # CORS (single init is enough)
 allowed_origins = [

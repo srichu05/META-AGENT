@@ -11,6 +11,7 @@ def init_database(app: Flask) -> None:
     migrate.init_app(app, db)
 
     # Import models after extension setup so Flask-Migrate can discover metadata.
+    from models.document import Document, DocumentChunk  # noqa: F401
     from models.system_setting import SystemSetting  # noqa: F401
 
 

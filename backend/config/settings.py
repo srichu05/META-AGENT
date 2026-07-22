@@ -72,6 +72,7 @@ SYSTEM_CONFIG: Dict[str, Any] = {
     "top_k_retrieval": int(os.getenv("TOP_K_RETRIEVAL", "5")),
     "embedding_dimension": int(os.getenv("EMBEDDING_DIMENSION", "384")),
     "embedding_model": os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5"),
+    "max_upload_file_size_bytes": int(os.getenv("MAX_UPLOAD_FILE_SIZE_BYTES", str(25 * 1024 * 1024))),
     "PORT": int(os.getenv("PORT", "5000")),
     "DEBUG_MODE": _as_bool(os.getenv("DEBUG"), default=True),
     "ALLOWED_ORIGINS": os.getenv("ALLOWED_ORIGINS", "*"),
@@ -91,6 +92,29 @@ RAG_CONFIG: Dict[str, Any] = {
     "chunk_overlap": int(os.getenv("CHUNK_OVERLAP", "50")),
     "similarity_threshold": float(os.getenv("SIMILARITY_THRESHOLD", "0.55")),
     "embeddings_cache": _path_from_env("EMBEDDINGS_CACHE", BACKEND_DIR / "database" / "embeddings_cache.pkl"),
+}
+
+INGESTION_CONFIG: Dict[str, Any] = {
+    "supported_file_types": {
+        ".pdf": "pdf",
+        ".docx": "docx",
+        ".txt": "txt",
+        ".md": "markdown",
+        ".markdown": "markdown",
+        ".png": "image",
+        ".jpg": "image",
+        ".jpeg": "image",
+        ".bmp": "image",
+        ".tif": "image",
+        ".tiff": "image",
+        ".webp": "image",
+    },
+    "max_file_size_bytes": int(os.getenv("MAX_UPLOAD_FILE_SIZE_BYTES", str(25 * 1024 * 1024))),
+    "chunk_size": int(os.getenv("CHUNK_SIZE", "500")),
+    "chunk_overlap": int(os.getenv("CHUNK_OVERLAP", "50")),
+    "embedding_batch_size": int(os.getenv("EMBEDDING_BATCH_SIZE", "32")),
+    "faiss_index_path": _path_from_env("FAISS_INDEX_PATH", BACKEND_DIR / "database" / "document_vectors.faiss"),
+    "document_list_limit": int(os.getenv("DOCUMENT_LIST_LIMIT", "50")),
 }
 
 AGENT_ROLES = {
