@@ -35,6 +35,26 @@ class FAISSVectorStore:
         self._index.add(normalized)
         return start_index
 
+    def search(self, query_vectors: np.ndarray, top_k: int = 5):
+        """Perform inner-product (cosine similarity for L2-normalized vectors) similarity search."""
+        self._load()
+        if self._index.ntotal == 0:
+            return np.array([[]], dtype=np.float32), np.array([[]], dtype=np.int64)
+
+        normalized = np.ascontiguousarray(query_vectors, dtype=np.float32)
+        if normalized.ndim == 1:
+            normalized = np.expand_dims(normalized, axis=0)
+
+        if normalized.shape[1] != self._index.d:
+            raise VectorStorageError(
+                f"Query dimension {normalized.shape[1]} does not match FAISS index dimension {self._index.d}."
+            )
+
+        k = min(top_k, int(self._index.ntotal))
+        scores, indices = self._index.search(normalized, k)
+        return scores, indices
+
+
     def save(self) -> None:
         self._load()
         try:

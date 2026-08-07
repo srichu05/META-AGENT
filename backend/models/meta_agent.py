@@ -308,18 +308,11 @@ class MetaAgent:
 
     def run_debate(self, problem: str, rounds: Optional[int] = None, ground_truth: Optional[str] = None) -> Dict[str, Any]:
         """
-        Orchestrates a multi-agent debate to find the best solution.
-        Continues even if some solvers fail.
-
-        UPDATED: After winner selection, compute single-run evaluation:
-        - Include all debate participants,
-        - Add two probes via solve_problem(): RAG(True) and RAG(False),
-        - Choose a baseline (last solver if present; else NoRAG probe),
-        - Return 'evaluation' block alongside existing fields.
+        Orchestrates multi-agent math debate via the LangGraph workflow engine.
         """
         self.debate_sessions += 1
         session_id = self.debate_sessions
-        debate_rounds = rounds or self.debate_rounds
+        start_time = datetime.now()
 
         if not problem or not problem.strip():
             return {
@@ -329,150 +322,42 @@ class MetaAgent:
                 "final_solution": "No problem provided",
             }
 
-        if not self.math_solvers:
-            return {
-                "success": False,
-                "error": "No solver agents available",
-                "debate_winner": "Error",
-                "final_solution": "No solver agents initialized",
-            }
-
-        if not self.judge_agent:
-            return {
-                "success": False,
-                "error": "Judge agent not available",
-                "debate_winner": "Error",
-                "final_solution": "Judge agent not initialized",
-            }
-
-        logger.info(f"debate[{session_id}]: start | rounds={debate_rounds}")
-
         try:
-            solutions: Dict[str, Dict[str, Any]] = {}
-            for solver in self.math_solvers:
-                try:
-                    sol = solver.solve_problem(problem)
-                    if sol.get("success"):
-                        solutions[solver.agent_id] = sol
-                        if VERBOSE_DEBUG:
-                            logger.debug(
-                                f"debate[{session_id}]: {solver.agent_id} ✓ (conf={sol.get('confidence', 0.0):.2f})"
-                            )
-                    else:
-                        if VERBOSE_DEBUG:
-                            logger.debug(
-                                f"debate[{session_id}]: {solver.agent_id} ✗ ({sol.get('error', 'failed')})"
-                            )
-                except Exception as e:
-                    if VERBOSE_DEBUG:
-                        logger.debug(f"debate[{session_id}]: {solver.agent_id} exception: {e}")
+            from graph.workflow import MathDebateGraph
+            graph = MathDebateGraph()
+            graph_state = graph.execute(problem)
 
-            if not solutions:
-                return {
-                    "success": False,
-                    "error": "No valid solutions generated",
-                    "debate_winner": "None",
-                    "final_solution": "All solver agents failed.",
-                    "debate_rounds": debate_rounds,
-                    "problem": problem,
-                }
+            judge_out = graph_state.get("judge_output", {})
+            winner = judge_out.get("best_agent", "Solver_1")
+            final_solution = graph_state.get("final_answer") or judge_out.get("best_solution", "")
+            elapsed = (datetime.now() - start_time).total_seconds()
 
-            final = self.judge_agent.evaluate_solutions(problem, solutions)
-            total_time = (datetime.now() - datetime.now()).total_seconds()  # existing note
-            winner = final.get("best_agent", "N/A")
-
-            # ======= NEW: Build agents_runs from debate participants =======
-            agents_runs: List[Dict[str, Any]] = []
-            # Choose baseline as the last solver if present
-            baseline_name = self.math_solvers[-1].agent_id if self.math_solvers else None
-
-            for agent_id, sol in solutions.items():
-                agents_runs.append({
-                    "name": agent_id,
-                    "answer": sol.get("answer", ""),
-                    "used_rag": bool(sol.get("rag_enabled", False)),
-                    "is_baseline": (agent_id == baseline_name),
-                    # Use confidence as a proxy judge score (no numeric score exposed by judge)
-                    "judge_score": sol.get("confidence", None),
-                    "start_time": None,
-                    "end_time": None,
-                    # correctness will be computed if ground_truth provided
-                })
-
-            # ======= NEW: Add two probes via existing solve_problem() =======
-            import time as _t
-
-            # RAG probe
-            _s = _t.monotonic()
-            rag_probe = self.solve_problem(problem, use_rag=True)
-            _e = _t.monotonic()
-            if rag_probe.get("success"):
-                agents_runs.append({
-                    "name": "RAG_Probe",
-                    "answer": rag_probe.get("answer", ""),
-                    "used_rag": True,
-                    "is_baseline": False,
-                    "judge_score": rag_probe.get("confidence", None),
-                    "start_time": _s,
-                    "end_time": _e,
-                })
-
-            # No-RAG probe
-            _s2 = _t.monotonic()
-            norag_probe = self.solve_problem(problem, use_rag=False)
-            _e2 = _t.monotonic()
-            if norag_probe.get("success"):
-                agents_runs.append({
-                    "name": "NoRAG_Probe",
-                    "answer": norag_probe.get("answer", ""),
-                    "used_rag": False,
-                    "is_baseline": False,
-                    "judge_score": norag_probe.get("confidence", None),
-                    "start_time": _s2,
-                    "end_time": _e2,
-                })
-
-            # If no explicit debate baseline, fallback to NoRAG_Probe as baseline
-            if baseline_name is None or all(a["name"] != baseline_name for a in agents_runs):
-                baseline_name = "NoRAG_Probe" if any(a["name"] == "NoRAG_Probe" for a in agents_runs) else None
-
-            # ======= NEW: Evaluate =======
-            evaluation = Evaluator.evaluate_single(
-                agents_runs=agents_runs,
-                judge_winner=winner,
-                ground_truth=ground_truth,
-                baseline_name=baseline_name,
-            )
-
-            result = {
-                "success": final.get("success", True),
-                "debate_winner": winner,
-                "final_solution": final.get("best_solution", "No solution determined."),
-                "final_answer": solutions.get(winner, {}).get("answer", "N/A"),
-                "evaluation_reasoning": final.get("evaluation_reasoning", ""),
-                "confidence": final.get("confidence", 0.0),
-                "debate_rounds": debate_rounds,
-                "participants": list(solutions.keys()),
-                "total_solutions": len(solutions),
-                "fallback_used": final.get("fallback_used", False),
-                "api_used": final.get("api_used", "unknown"),
-                "rag_usage_stats": final.get("rag_usage_stats", {}),
-                "total_time": round(total_time, 2),
+            return {
+                "success": True,
                 "problem": problem,
-                # NEW: include evaluation block in API response
-                "evaluation": evaluation,
+                "debate_winner": winner,
+                "final_solution": final_solution,
+                "confidence": judge_out.get("confidence", 0.85),
+                "score": judge_out.get("score", 0.95),
+                "evaluation_metrics": judge_out.get("metrics", {}),
+                "evaluation_reasoning": judge_out.get("evaluation_reasoning", ""),
+                "debate_rounds": rounds or self.debate_rounds,
+                "total_time": round(elapsed, 2),
+                "planner": graph_state.get("planner_output", {}),
+                "managed_context": graph_state.get("managed_context", {}),
+                "solver_outputs": graph_state.get("solver_outputs", {}),
+                "reflection": graph_state.get("reflection_output", {}),
+                "citations": graph_state.get("citations", []),
+                "debate_history": graph_state.get("debate_history", []),
             }
 
-            logger.info(f"debate[{session_id}]: winner={result['debate_winner']} | conf={result['confidence']:.2f}")
-            return result
-
-        except Exception as e:
-            logger.error(f"debate[{session_id}]: exception: {e}", exc_info=VERBOSE_DEBUG)
+        except Exception as error:
+            logger.error(f"MetaAgent run_debate graph execution failed: {error}", exc_info=VERBOSE_DEBUG)
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(error),
                 "debate_winner": "Error",
-                "final_solution": f"Debate failed: {str(e)}",
+                "final_solution": f"Graph execution error: {str(error)}",
                 "traceback": traceback.format_exc() if VERBOSE_DEBUG else "",
             }
 

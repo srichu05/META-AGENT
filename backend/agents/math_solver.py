@@ -201,29 +201,40 @@ class MathSolverAgent:
 
         return header + problem_block + instructions + "\n" + format_spec
 
-    def _make_inline_rag_snippets(self, context: List[Dict]) -> str:
+    def _make_inline_rag_snippets(self, context: Any) -> str:
         """
         Turn RAG context into compact, generalizable hints for solvers.
-        Uses up to the first 3 items; trims long solutions.
+        Supports str, dict, and list types without failing.
         """
+        if not context:
+            return ""
+
+        if isinstance(context, str):
+            return context.strip()
+
+        if isinstance(context, dict):
+            return str(context.get("formatted_context", context))
+
         hints = []
-        for item in context[:3]:
-            # Handle both direct dict and nested metadata
-            meta = item.get("metadata", item)
-            prob = (meta.get("problem") or "").strip()
-            sol = (meta.get("solution") or "").strip()
-            ans = (meta.get("answer") or "").strip()
+        if isinstance(context, list):
+            for item in context[:5]:
+                if isinstance(item, str):
+                    hints.append(f"- Reference Context: {item.strip()}")
+                elif isinstance(item, dict):
+                    meta = item.get("metadata", item)
+                    prob = (meta.get("problem") or meta.get("filename") or "").strip()
+                    sol = (meta.get("solution") or meta.get("content") or "").strip()
+                    ans = (meta.get("answer") or "").strip()
 
-            # Light summarization / truncation to avoid flooding the prompt
-            if len(sol) > 280:
-                sol = sol[:280].rstrip() + " ..."
+                    if len(sol) > 280:
+                        sol = sol[:280].rstrip() + " ..."
 
-            # Extract a compact heuristic from the solution text
-            heuristic = self._extract_quick_heuristic(sol) or "Follow step-by-step arithmetic; verify units."
-            hint = f"- Example → If similar to: '{prob[:90].rstrip()}...', approach: {heuristic} (ans≈ {ans})"
-            hints.append(hint)
+                    heuristic = self._extract_quick_heuristic(sol) or sol or "Follow step-by-step reasoning."
+                    hint = f"- Reference ({prob[:60]}): {heuristic}" + (f" (ans: {ans})" if ans else "")
+                    hints.append(hint)
 
         return "\n".join(hints) if hints else ""
+
 
     # ---------- Parsing ----------
     def _parse_multi_agent_response(self, text: str) -> Dict[str, Any]:

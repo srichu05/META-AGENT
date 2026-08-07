@@ -25,6 +25,8 @@ from utils.logger import setup_logger
 from config import SYSTEM_CONFIG
 from database import init_database
 from api.documents import documents_blueprint
+from api.retrieval import retrieval_blueprint
+from api.debate_api import graph_debate_blueprint
 
 # --- Flask App Initialization ---
 app = Flask(__name__)
@@ -36,6 +38,9 @@ app.config.update(
 init_database(app)
 app.config["MAX_CONTENT_LENGTH"] = SYSTEM_CONFIG["max_upload_file_size_bytes"]
 app.register_blueprint(documents_blueprint)
+app.register_blueprint(retrieval_blueprint)
+app.register_blueprint(graph_debate_blueprint)
+
 
 # CORS (single init is enough)
 allowed_origins = [
@@ -143,6 +148,7 @@ def initialize_app() -> bool:
 
 @app.route("/", methods=["GET"])
 def root():
+
     """Root endpoint - provides welcome page with API information"""
     return f"""
     <!DOCTYPE html>

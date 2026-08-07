@@ -76,6 +76,8 @@ SYSTEM_CONFIG: Dict[str, Any] = {
     "PORT": int(os.getenv("PORT", "5000")),
     "DEBUG_MODE": _as_bool(os.getenv("DEBUG"), default=True),
     "ALLOWED_ORIGINS": os.getenv("ALLOWED_ORIGINS", "*"),
+    "PLANNER_ENABLED": _as_bool(os.getenv("PLANNER_ENABLED"), default=True),
+    "REFLECTION_ENABLED": _as_bool(os.getenv("REFLECTION_ENABLED"), default=True),
     # TODO(Draft 2): remove this compatibility block when APIClient is retired.
     "LOCAL_MODEL": {
         "enabled": _as_bool(os.getenv("LOCAL_MODEL_ENABLED"), default=False),
@@ -87,12 +89,20 @@ SYSTEM_CONFIG: Dict[str, Any] = {
     },
 }
 
+
 RAG_CONFIG: Dict[str, Any] = {
     "chunk_size": int(os.getenv("CHUNK_SIZE", "500")),
     "chunk_overlap": int(os.getenv("CHUNK_OVERLAP", "50")),
     "similarity_threshold": float(os.getenv("SIMILARITY_THRESHOLD", "0.55")),
     "embeddings_cache": _path_from_env("EMBEDDINGS_CACHE", BACKEND_DIR / "database" / "embeddings_cache.pkl"),
+    "hybrid_enabled": _as_bool(os.getenv("HYBRID_RETRIEVAL_ENABLED"), default=True),
+    "bm25_weight": float(os.getenv("BM25_WEIGHT", "0.3")),
+    "faiss_weight": float(os.getenv("FAISS_WEIGHT", "0.7")),
+    "cohere_rerank_enabled": _as_bool(os.getenv("COHERE_RERANK_ENABLED"), default=False),
+    "cohere_rerank_model": os.getenv("COHERE_RERANK_MODEL", "rerank-v3.5"),
+    "max_context_length": int(os.getenv("MAX_CONTEXT_LENGTH", "4000")),
 }
+
 
 INGESTION_CONFIG: Dict[str, Any] = {
     "supported_file_types": {
