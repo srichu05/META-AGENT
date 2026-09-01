@@ -80,13 +80,14 @@ class FAISSVectorStore:
             raise VectorStorageError("faiss-cpu is not installed.") from error
 
         try:
-            if self.index_path.exists():
+            if self.index_path.exists() and self.index_path.stat().st_size > 0:
                 self._index = faiss.read_index(str(self.index_path))
             else:
                 resolved_dimension = dimension or self.expected_dimension
                 if not resolved_dimension:
                     raise VectorStorageError("An embedding dimension is required to initialize the FAISS index.")
                 self._index = faiss.IndexFlatIP(resolved_dimension)
+
         except VectorStorageError:
             raise
         except Exception as error:

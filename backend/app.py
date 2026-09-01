@@ -27,6 +27,7 @@ from database import init_database
 from api.documents import documents_blueprint
 from api.retrieval import retrieval_blueprint
 from api.debate_api import graph_debate_blueprint
+from api.evaluation_api import evaluation_blueprint
 
 # --- Flask App Initialization ---
 app = Flask(__name__)
@@ -40,6 +41,8 @@ app.config["MAX_CONTENT_LENGTH"] = SYSTEM_CONFIG["max_upload_file_size_bytes"]
 app.register_blueprint(documents_blueprint)
 app.register_blueprint(retrieval_blueprint)
 app.register_blueprint(graph_debate_blueprint)
+app.register_blueprint(evaluation_blueprint)
+
 
 
 # CORS (single init is enough)

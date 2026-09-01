@@ -5,6 +5,8 @@ import re
 import logging
 from typing import Dict, List, Set, Tuple
 
+from flask import has_app_context
+
 from models.document import DocumentChunk
 
 logger = logging.getLogger(__name__)
@@ -13,6 +15,19 @@ logger = logging.getLogger(__name__)
 def _tokenize(text: str) -> List[str]:
     """Tokenize and lower-case words/alphanumerics."""
     return re.findall(r"\w+", (text or "").lower())
+
+
+def _get_all_chunks() -> List[DocumentChunk]:
+    """Safely query DocumentChunk table, ensuring an active Flask app context if needed."""
+    if not has_app_context():
+        try:
+            from app import app
+            with app.app_context():
+                return DocumentChunk.query.all()
+        except Exception as err:
+            logger.warning(f"Could not acquire Flask app context for BM25 search: {err}")
+            return []
+    return DocumentChunk.query.all()
 
 
 class BM25Retriever:
@@ -32,9 +47,10 @@ class BM25Retriever:
             return []
 
         try:
-            chunks = DocumentChunk.query.all()
+            chunks = _get_all_chunks()
             if not chunks:
                 return []
+
 
             N = len(chunks)
             doc_tokens_list: List[List[str]] = [_tokenize(c.content) for c in chunks]

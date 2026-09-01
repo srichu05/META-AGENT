@@ -35,6 +35,9 @@ def run_graph_debate():
         best_solution = graph_state.get("final_answer") or judge_out.get("best_solution", "")
         best_agent = judge_out.get("best_agent", "Solver_1")
 
+        from providers.router import ProviderRouter
+        router = ProviderRouter()
+
         response_payload = {
             "success": True,
             "problem": problem,
@@ -51,9 +54,11 @@ def run_graph_debate():
             "judge": judge_out,
             "citations": graph_state.get("citations", []),
             "debate_history": graph_state.get("debate_history", []),
+            "provider_metrics": router.get_metrics_summary(),
         }
 
         return jsonify(response_payload), 200
+
     except Exception as error:
         current_app.logger.exception("LangGraph debate workflow failed unexpectedly")
         return jsonify({"success": False, "error": str(error)}), 500

@@ -8,6 +8,10 @@ from typing import Any, Dict, List, Optional
 from utils.api_client import APIClient
 from config import PROBLEM_TYPES, SYSTEM_CONFIG
 
+from prompts.prompts import PLANNER_SYSTEM_PROMPT
+from providers.router import ProviderRouter
+from providers.types import ProviderResponse
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,9 +42,9 @@ class PlannerOutput:
 class PlannerAgent:
     """Classifies math queries and produces structured planning strategy before retrieval/reasoning."""
 
-    def __init__(self, agent_id: str = "planner", api_client: Optional[APIClient] = None):
+    def __init__(self, agent_id: str = "planner", router: Optional[ProviderRouter] = None):
         self.agent_id = agent_id
-        self.api_client = api_client
+        self.router = router or ProviderRouter()
         self.supported_topics = PROBLEM_TYPES
 
     def plan(self, query: str) -> PlannerOutput:
@@ -67,14 +71,13 @@ class PlannerAgent:
         needs_retrieval = self._decide_retrieval(query, topic, difficulty)
         retrieval_depth = self._decide_depth(difficulty, needs_retrieval)
 
-        # Attempt LLM refinement if APIClient is available
-        if self.api_client and self.api_client.is_configured():
-            try:
-                llm_plan = self._llm_plan(query)
-                if llm_plan:
-                    return llm_plan
-            except Exception as error:
-                logger.warning(f"LLM planning failed ({error}). Using heuristic planner output.")
+        # Attempt ProviderRouter call (Gemini preferred for planning)
+        try:
+            llm_plan = self._llm_plan(query)
+            if llm_plan:
+                return llm_plan
+        except Exception as error:
+            logger.warning(f"LLM planning failed ({error}). Using heuristic planner output.")
 
         strategy = [
             f"Identify core {topic} definitions and equations.",
@@ -123,7 +126,6 @@ class PlannerAgent:
         return "easy"
 
     def _decide_retrieval(self, query: str, topic: str, difficulty: str) -> bool:
-        # Heuristic: Complex word problems, formulas, geometry, or hard problems benefit from document RAG
         if difficulty in ["medium", "hard"] or topic in ["word_problem", "geometry", "calculus", "algebra"]:
             return True
         return False
@@ -138,10 +140,7 @@ class PlannerAgent:
         return 3
 
     def _llm_plan(self, query: str) -> Optional[PlannerOutput]:
-        prompt = f"""You are an expert Math Planner Agent. Analyze the following math query.
-Do NOT solve the math problem. Only plan the execution strategy.
-
-Query: "{query}"
+        user_prompt = f"""Query to plan: "{query}"
 
 Respond EXACTLY in this format:
 TOPIC: [arithmetic/algebra/geometry/word_problem/percentage/fractions/time_distance/money/probability/calculus]
@@ -151,11 +150,18 @@ RETRIEVAL_DEPTH: [3/5/7]
 STRATEGY: [Short sentence 1]; [Short sentence 2]
 REASONING: [One short explanation sentence]
 """
-        res = self.api_client.call_best_available_api(prompt, max_tokens=256, temperature=0.1)
-        if not res.get("success"):
+        res: ProviderResponse = self.router.generate(
+            prompt=user_prompt,
+            system_instruction=PLANNER_SYSTEM_PROMPT,
+            target_provider="GEMINI",
+            max_tokens=256,
+            temperature=0.1,
+        )
+
+        if not res.success or not res.raw_text:
             return None
 
-        text = res.get("response", "")
+        text = res.raw_text
         topic_m = re.search(r"TOPIC:\s*(\w+)", text, re.I)
         diff_m = re.search(r"DIFFICULTY:\s*(\w+)", text, re.I)
         ret_m = re.search(r"NEEDS_RETRIEVAL:\s*(True|False)", text, re.I)
@@ -168,7 +174,7 @@ REASONING: [One short explanation sentence]
         needs_retrieval = (ret_m.group(1).lower() == "true") if ret_m else True
         depth = int(depth_m.group(1)) if depth_m else 5
         strategy = [s.strip() for s in strat_m.group(1).split(";") if s.strip()] if strat_m else ["Analyze problem.", "Formulate steps."]
-        reasoning = reas_m.group(1).strip() if reas_m else "LLM planner evaluation completed."
+        reasoning = reas_m.group(1).strip() if reas_m else f"Planner routed via {res.provider}."
 
         return PlannerOutput(
             query=query,

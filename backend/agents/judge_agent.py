@@ -11,7 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from config import AGENT_ROLES
-from utils.api_client import APIClient
+from prompts.prompts import JUDGE_SYSTEM_PROMPT
+from providers.router import ProviderRouter
+from providers.types import ProviderResponse
 
 logger = logging.getLogger(__name__)
 
@@ -19,23 +21,17 @@ logger = logging.getLogger(__name__)
 class JudgeAgent:
     """Judge agent that evaluates and ranks solutions from multiple solver agents using reflection audit notes."""
 
-    def __init__(self, agent_id: str = "judge", role: Optional[str] = None):
+    def __init__(self, agent_id: str = "judge", role: Optional[str] = None, router: Optional[ProviderRouter] = None):
         self.agent_id = agent_id
         self.role = role or AGENT_ROLES.get(agent_id, "Solution Evaluator")
-        self.api_client: Optional[APIClient] = None
+        self.router = router or ProviderRouter()
 
     def initialize(self) -> bool:
-        """Initialize the judge agent by creating an API client."""
-        try:
-            self.api_client = APIClient()
-            if not self.api_client.is_configured():
-                logger.warning(f"Judge agent '{self.agent_id}' initialized but no external API providers configured.")
-            else:
-                logger.info(f"✅ Judge agent '{self.agent_id}' ready.")
-            return True
-        except Exception as e:
-            logger.error(f"❌ Failed to initialize Judge agent: {str(e)}", exc_info=True)
-            return False
+        """Initialize the judge agent by validating provider availability."""
+        status = self.router.validate_providers()
+        configured = [p for p, active in status.items() if active]
+        logger.info(f"✅ Judge agent '{self.agent_id}' ready with providers: {configured}")
+        return True
 
     def evaluate_solutions(
         self,
@@ -45,7 +41,7 @@ class JudgeAgent:
         reflection_output: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
-        Evaluates multiple solutions to a problem using LLM judge and reflection feedback.
+        Evaluates multiple solutions to a problem using ProviderRouter and reflection feedback.
         """
         if not solutions:
             logger.warning("No solutions provided to evaluate")
@@ -57,9 +53,6 @@ class JudgeAgent:
                 "score": 0.0,
                 "metrics": {},
             }
-
-        if not self.api_client:
-            self.initialize()
 
         if len(solutions) == 1:
             agent_id, solution_data = list(solutions.items())[0]
@@ -82,21 +75,23 @@ class JudgeAgent:
         prompt = self._create_evaluation_prompt(problem, solutions, reflection_output=reflection_output)
 
         try:
-            logger.info(f"Evaluating {len(solutions)} solutions using AI judge (with reflection feedback)...")
-            response = self.api_client.call_best_available_api(
-                prompt,
+            logger.info(f"Evaluating {len(solutions)} solutions using AI judge via ProviderRouter...")
+            res: ProviderResponse = self.router.generate(
+                prompt=prompt,
+                system_instruction=JUDGE_SYSTEM_PROMPT,
+                target_provider="GEMINI",
                 max_tokens=1024,
                 temperature=0.1,
             )
 
-            if response.get("success"):
-                evaluation_text = response.get("response", "")
+            if res.success and res.raw_text:
+                evaluation_text = res.raw_text
                 parsed_eval = self._parse_evaluation(evaluation_text, solutions)
                 best_agent_id = parsed_eval.get("best_agent")
 
                 if best_agent_id and best_agent_id in solutions:
                     best_solution_data = solutions[best_agent_id]
-                    logger.info(f"✅ Best solution selected: Agent '{best_agent_id}'")
+                    logger.info(f"✅ Best solution selected: Agent '{best_agent_id}' via {res.provider}")
 
                     hallucination_detected = bool(reflection_output and reflection_output.get("hallucination_detected"))
 
@@ -106,7 +101,7 @@ class JudgeAgent:
                         "best_solution": best_solution_data.get("solution", ""),
                         "evaluation_reasoning": parsed_eval.get("reasoning", "No specific reasoning provided."),
                         "confidence": self._calculate_evaluation_confidence(parsed_eval),
-                        "api_used": response.get("api_used", "unknown"),
+                        "api_used": f"{res.provider}/{res.model}",
                         "score": 0.95 if not hallucination_detected else 0.75,
                         "metrics": {
                             "correctness": 0.95,

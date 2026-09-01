@@ -163,3 +163,4 @@ google-generativeai==0.5.2
 flask-cors==4.0.0
 langchain-core>=0.2.0
 langgraph>=0.1.0
+ragas>=0.1.0

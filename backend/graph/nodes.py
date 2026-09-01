@@ -38,10 +38,11 @@ _reflection_agent = ReflectionAgent()
 _judge_agent = JudgeAgent()
 
 _solvers = [
-    MathSolverAgent("solver_1", "Analytical Math Solver"),
-    MathSolverAgent("solver_2", "Creative Problem Solver"),
-    MathSolverAgent("solver_3", "Verification Agent"),
+    MathSolverAgent("solver_1", "Analytical Math Solver", target_provider="GEMINI"),
+    MathSolverAgent("solver_2", "Fast Problem Solver", target_provider="GROQ"),
+    MathSolverAgent("solver_3", "Alternative Reasoning Solver", target_provider="OPENROUTER"),
 ]
+
 
 
 def planner_node(state: DebateGraphState) -> DebateGraphState:
@@ -160,9 +161,6 @@ def _run_solver_node(state: DebateGraphState, solver: MathSolverAgent, solver_na
     if "solver_outputs" not in state or state["solver_outputs"] is None:
         state["solver_outputs"] = {}
 
-    if not solver.api_client:
-        solver.initialize()
-
     result = solver.solve_problem(query, context=context_str)
     state["solver_outputs"][solver.agent_id] = result
 
@@ -178,10 +176,6 @@ def reflection_node(state: DebateGraphState) -> DebateGraphState:
     """Node 7: Reflection Agent - Audit solver outputs for contradictions and math errors."""
     query = state.get("query", "")
     solver_outputs = state.get("solver_outputs", {})
-
-    if not _reflection_agent.api_client:
-        from utils.api_client import APIClient
-        _reflection_agent.api_client = APIClient()
 
     reflection_output = _reflection_agent.reflect(query, solver_outputs)
     ref_dict = reflection_output.to_dict()
@@ -201,14 +195,12 @@ def judge_node(state: DebateGraphState) -> DebateGraphState:
     solver_outputs = state.get("solver_outputs", {})
     reflection_output = state.get("reflection_output", {})
 
-    if not _judge_agent.api_client:
-        _judge_agent.initialize()
-
     judge_result = _judge_agent.evaluate_solutions(
         problem=query,
         solutions=solver_outputs,
         reflection_output=reflection_output,
     )
+
 
     state["judge_output"] = judge_result
     state["final_answer"] = judge_result.get("best_solution", "")

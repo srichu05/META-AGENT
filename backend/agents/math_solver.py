@@ -23,185 +23,110 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from utils.api_client import APIClient
 from config import AGENT_ROLES, SYSTEM_CONFIG
+from prompts.prompts import get_prompt_template
+from providers.router import ProviderRouter
+from providers.types import ProviderResponse
 
 logger = logging.getLogger(__name__)
+
 
 
 class MathSolverAgent:
     """Individual math solver agent using a multi-agent prompt in a single LLM call."""
     
-    def __init__(self, agent_id: str, role: Optional[str] = None):
+    def __init__(
+        self,
+        agent_id: str,
+        role: Optional[str] = None,
+        solving_style: Optional[str] = None,
+        target_provider: str = "GEMINI",
+        router: Optional[ProviderRouter] = None,
+    ):
         """
         Initialize a Math Solver Agent.
 
         Args:
             agent_id: Unique identifier for the agent (e.g., 'solver_1', 'solver_2')
             role: Description of the agent's role (auto-loaded from config if None)
+            solving_style: Descriptive style name
+            target_provider: Target cloud provider ('GEMINI', 'GROQ', 'OPENROUTER')
+            router: ProviderRouter instance
         """
         self.agent_id = agent_id
-        # Auto-load role from config if not provided
         self.role = role or AGENT_ROLES.get(agent_id, "General Math Solver")
-        self.api_client: Optional[APIClient] = None
+        self.solving_style = solving_style or self.role
+        self.target_provider = target_provider.upper()
+        self.router = router or ProviderRouter()
+        self.system_instruction = get_prompt_template(self.agent_id, self.target_provider)
 
         # Solving configuration
         self.max_tokens = SYSTEM_CONFIG.get("max_tokens_completion", 1500)
         self.temperature = SYSTEM_CONFIG.get("temperature", 0.2)
 
-        # Multi-agent style (fixed: analytical + creative + verifier + judge)
-        self.virtual_agents = [
-            ("ANALYTICAL", "Provide rigorous, algebraic, step-by-step reasoning with clear math notation."),
-            ("CREATIVE", "Offer alternative/shortcut reasoning or visualization that still lands on a correct result."),
-            ("VERIFIER", "Check both solutions, run quick numeric checks, spot mistakes, and correct if needed.")
-        ]
 
-    # ---------- Lifecycle ----------
     def initialize(self) -> bool:
-        """Initializes the agent by setting up its API client."""
-        try:
-            logger.info(f"🔧 Initializing '{self.agent_id}'...")
-            self.api_client = APIClient()
-            
-            # Validation
-            if not self.api_client.is_configured():
-                logger.error(f"❌ Math solver '{self.agent_id}' - NO API providers are configured!")
-                logger.error("💡 Check your .env in the backend folder.")
-                logger.error("📝 Any of these works: GROQ_API_KEY, OPENAI_API_KEY, COHERE_API_KEY, HUGGING_FACE_API_KEY")
-                return False
-            
-            # Show which providers are available
-            provider_status = self.api_client.get_provider_status()
-            configured = [p for p, status in provider_status.items() if status]
-            logger.info(f"✅ Math solver '{self.agent_id}' initialized with providers: {configured}")
-            return True
+        """Initialize the solver agent by validating provider availability."""
+        status = self.router.validate_providers()
+        logger.info(f"✅ Solver '{self.agent_id}' ({self.target_provider}) initialized.")
+        return True
 
-        except Exception as e:
-            logger.error(f"💥 Failed to initialize Math Solver agent '{self.agent_id}': {str(e)}", exc_info=True)
-            return False
-
-    # ---------- Public API ----------
-    def solve_problem(self, problem: str, context: Optional[List[Dict]] = None) -> Dict[str, Any]:
+    def solve_problem(self, problem: str, context: Any = None) -> Dict[str, Any]:
         """
-        Solves a math problem using a single LLM call with a multi-agent prompt.
-
-        Args:
-            problem: The math problem to solve
-            context: Optional list of similar problems for RAG (inline usage)
-
-        Returns:
-            Dictionary containing solution, answer, confidence, success, and metadata
+        Solves a math problem using specialized system instructions and ProviderRouter target provider.
         """
-        if not self.api_client:
-            logger.error(f"Agent '{self.agent_id}' not initialized. Call initialize() first.")
-            return self._fail("Agent not initialized")
-
         if not problem or not problem.strip():
-            logger.warning(f"Agent '{self.agent_id}' received empty problem")
             return self._fail("Empty problem provided")
 
-        # Build multi-agent prompt with inline RAG
-        prompt = self._build_multi_agent_prompt(problem, context)
+        context_snippets = self._make_inline_rag_snippets(context)
+        user_prompt = f"Problem to solve:\n{problem}\n\n"
+        if context_snippets:
+            user_prompt += f"Context & Reference Hints:\n{context_snippets}\n\n"
+        user_prompt += "Formulate step-by-step reasoning and end with:\nFINAL_ANSWER: <value>"
 
         try:
-            if context:
-                logger.info(f"🧮 Agent '{self.agent_id}' solving WITH {len(context)} inline RAG examples (multi-agent one-shot)")
-            else:
-                logger.info(f"🧮 Agent '{self.agent_id}' solving WITHOUT RAG (multi-agent one-shot)")
-
-            response = self.api_client.call_best_available_api(
-                prompt,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature
+            logger.info(f"🧮 Agent '{self.agent_id}' solving via provider '{self.target_provider}'...")
+            res: ProviderResponse = self.router.generate(
+                prompt=user_prompt,
+                system_instruction=self.system_instruction,
+                target_provider=self.target_provider,
+                max_tokens=1024,
+                temperature=0.2,
             )
 
-            if not response.get("success"):
-                return self._fail(response.get("error", "API call failed"))
+            if res.success and res.raw_text:
+                return {
+                    "success": True,
+                    "agent_id": self.agent_id,
+                    "solving_style": self.solving_style,
+                    "solution": res.reasoning or res.raw_text,
+                    "answer": res.answer,
+                    "confidence": res.confidence or 0.85,
+                    "api_used": f"{res.provider}/{res.model}",
+                    "latency_ms": res.latency_ms,
+                    "token_usage": res.token_usage,
+                    "cost": res.estimated_cost,
+                }
 
-            text = response.get("response", "")
-            parsed = self._parse_multi_agent_response(text)
-
-            # Ensure minimum fields
-            parsed.setdefault("solution", text.strip())
-            parsed.setdefault("answer", "No final answer found")
-            parsed.setdefault("confidence", 0.4)
-
-            result = {
-                "success": True,
-                "agent_id": self.agent_id,
-                "solving_style": "multi_agent_one_call",
-                "api_used": response.get("api_used", "unknown"),
-                "solution": parsed["solution"],
-                "answer": parsed["answer"],
-                "confidence": parsed["confidence"],
-                # RAG metadata
-                "rag_context_used": len(context) if context else 0,
-                "has_rag_context": bool(context)
-            }
-
-            logger.info(f"✅ '{self.agent_id}' solved | ans: {result['answer']} | conf: {result['confidence']:.2f} | api: {result['api_used']}")
-            return result
+            logger.warning(f"⚠️ Solver '{self.agent_id}' generation failed ({res.error}). Returning fallback.")
+            return self._fail(res.error or "Provider generation failed")
 
         except Exception as e:
-            logger.error(f"💥 Error during problem solving for agent '{self.agent_id}': {str(e)}", exc_info=True)
+            logger.error(f"💥 Exception in MathSolverAgent '{self.agent_id}': {e}", exc_info=True)
             return self._fail(str(e))
 
+    def _fail(self, reason: str) -> Dict[str, Any]:
+        return {
+            "success": False,
+            "agent_id": self.agent_id,
+            "error": reason,
+            "solution": None,
+            "answer": None,
+            "confidence": 0.0
+        }
+
     # ---------- Prompt Construction ----------
-    def _build_multi_agent_prompt(self, problem: str, context: Optional[List[Dict]]) -> str:
-        """
-        Creates a structured prompt with 3 solver personas + a mini-judge.
-        Inline RAG (Option 1): weave RAG examples into each solver's reasoning guidelines.
-        """
-        # Prepare inline RAG snippets for each solver (compact & instructive)
-        rag_snippets = self._make_inline_rag_snippets(context) if context else ""
-
-        header = (
-            "You are a team of 3 math solvers and 1 judge. "
-            "Work in the strict format below. Use clear math and be concise.\n\n"
-        )
-
-        format_spec = (
-            "=== ANALYTICAL ===\n"
-            "RAG-GUIDE:\n"
-            "{RAG_SNIPPETS}\n"
-            "SOLUTION:\n"
-            "[analytical, step-by-step reasoning]\n"
-            "FINAL ANSWER:\n"
-            "[number only when possible]\n\n"
-            "=== CREATIVE ===\n"
-            "RAG-GUIDE:\n"
-            "{RAG_SNIPPETS}\n"
-            "SOLUTION:\n"
-            "[alternative/shortcut reasoning or visualization]\n"
-            "FINAL ANSWER:\n"
-            "[number only, can match analytical if correct]\n\n"
-            "=== VERIFIER ===\n"
-            "CHECK:\n"
-            "- Compare ANALYTICAL vs CREATIVE results.\n"
-            "- Identify arithmetic/calc mistakes if any (brief).\n"
-            "- Do 1 quick numeric sanity check.\n\n"
-            "=== JUDGE ===\n"
-            "BEST_AGENT:\n"
-            "[ANALYTICAL or CREATIVE]\n"
-            "REASON:\n"
-            "[why the chosen answer is most reliable]\n"
-            "FINAL_ANSWER:\n"
-            "[single final number/value — no words]\n"
-            "CONFIDENCE:\n"
-            "[0.0 to 1.0]\n"
-        ).replace("{RAG_SNIPPETS}", rag_snippets.strip() if rag_snippets else "(no relevant RAG available)")
-
-        problem_block = f"---\nPROBLEM:\n{problem}\n---\n"
-
-        instructions = (
-            "Rules:\n"
-            "- Keep each section under ~8 lines.\n"
-            "- Math must be correct; show minimal but sufficient steps.\n"
-            "- Judge must output ONLY one FINAL_ANSWER (number when possible).\n"
-            "- Use RAG-GUIDE hints where helpful; do not copy text verbatim.\n"
-        )
-
-        return header + problem_block + instructions + "\n" + format_spec
-
     def _make_inline_rag_snippets(self, context: Any) -> str:
+
         """
         Turn RAG context into compact, generalizable hints for solvers.
         Supports str, dict, and list types without failing.

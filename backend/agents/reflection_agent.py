@@ -7,6 +7,10 @@ from typing import Any, Dict, List, Optional
 
 from utils.api_client import APIClient
 
+from prompts.prompts import REFLECTION_SYSTEM_PROMPT
+from providers.router import ProviderRouter
+from providers.types import ProviderResponse
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,9 +41,9 @@ class ReflectionOutput:
 class ReflectionAgent:
     """Evaluates solver solutions for mathematical consistency, contradictions, and hallucinations."""
 
-    def __init__(self, agent_id: str = "reflection", api_client: Optional[APIClient] = None):
+    def __init__(self, agent_id: str = "reflection", router: Optional[ProviderRouter] = None):
         self.agent_id = agent_id
-        self.api_client = api_client
+        self.router = router or ProviderRouter()
 
     def reflect(self, problem: str, solver_outputs: Dict[str, Dict[str, Any]]) -> ReflectionOutput:
         """
@@ -73,8 +77,8 @@ class ReflectionAgent:
             if not solution_text or len(solution_text) < 10:
                 math_inconsistencies.append(f"Agent '{s_id}' provided insufficient reasoning steps.")
 
-        # Attempt LLM reflection if APIClient is available
-        if self.api_client and self.api_client.is_configured() and len(solver_outputs) > 0:
+        # Attempt LLM reflection via ProviderRouter
+        if len(solver_outputs) > 0:
             try:
                 llm_reflection = self._llm_reflect(problem, solver_outputs)
                 if llm_reflection:
@@ -95,7 +99,7 @@ class ReflectionAgent:
         )
 
     def _llm_reflect(self, problem: str, solver_outputs: Dict[str, Dict[str, Any]]) -> Optional[ReflectionOutput]:
-        prompt = f"You are a Mathematical Reflection Agent analyzing multiple solver solutions.\n\nProblem:\n{problem}\n\n"
+        prompt = f"Problem:\n{problem}\n\n"
         for s_id, s_data in solver_outputs.items():
             prompt += f"--- Solution from Agent '{s_id}' ---\n"
             prompt += f"Steps:\n{s_data.get('solution', 'N/A')}\n"
@@ -114,11 +118,18 @@ INCONSISTENCIES: [Short description of math errors or None]
 CORRECTIONS: [Short suggestion or None]
 SUMMARY: [One line summary]
 """
-        res = self.api_client.call_best_available_api(prompt, max_tokens=512, temperature=0.1)
-        if not res.get("success"):
+        res: ProviderResponse = self.router.generate(
+            prompt=prompt,
+            system_instruction=REFLECTION_SYSTEM_PROMPT,
+            target_provider="GEMINI",
+            max_tokens=512,
+            temperature=0.1,
+        )
+
+        if not res.success or not res.raw_text:
             return None
 
-        text = res.get("response", "")
+        text = res.raw_text
         contra_m = re.search(r"CONTRADICTIONS_FOUND:\s*(True|False)", text, re.I)
         hallu_m = re.search(r"HALLUCINATION_DETECTED:\s*(True|False)", text, re.I)
         disc_m = re.search(r"DISCREPANCIES:\s*(.*)", text, re.I)
@@ -132,7 +143,7 @@ SUMMARY: [One line summary]
         discrepancies = [disc_m.group(1).strip()] if disc_m and disc_m.group(1).strip().lower() != "none" else []
         math_inconsistencies = [incon_m.group(1).strip()] if incon_m and incon_m.group(1).strip().lower() != "none" else []
         suggested_corrections = [corr_m.group(1).strip()] if corr_m and corr_m.group(1).strip().lower() != "none" else []
-        summary = summ_m.group(1).strip() if summ_m else "Reflection completed."
+        summary = summ_m.group(1).strip() if summ_m else f"Reflection completed via {res.provider}."
 
         answers = {s_id: s_data.get("answer", "").strip() for s_id, s_data in solver_outputs.items()}
 

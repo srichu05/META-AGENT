@@ -3,10 +3,25 @@
 import logging
 from typing import Dict, List, Tuple
 
+from flask import has_app_context
+
 from models.document import Document, DocumentChunk
 from .types import RetrievedChunk
 
 logger = logging.getLogger(__name__)
+
+
+def _query_chunks_by_indices(vector_indices: List[int]) -> List[DocumentChunk]:
+    """Safely query DocumentChunk records, ensuring an active Flask app context if needed."""
+    if not has_app_context():
+        try:
+            from app import app
+            with app.app_context():
+                return DocumentChunk.query.filter(DocumentChunk.vector_index.in_(vector_indices)).all()
+        except Exception as err:
+            logger.warning(f"Could not acquire Flask app context for MetadataLookup: {err}")
+            return []
+    return DocumentChunk.query.filter(DocumentChunk.vector_index.in_(vector_indices)).all()
 
 
 class MetadataLookupService:
@@ -24,10 +39,8 @@ class MetadataLookupService:
         vector_indices = list(index_to_score.keys())
 
         try:
-            chunks = (
-                DocumentChunk.query.filter(DocumentChunk.vector_index.in_(vector_indices))
-                .all()
-            )
+            chunks = _query_chunks_by_indices(vector_indices)
+
 
             chunk_map: Dict[int, DocumentChunk] = {chunk.vector_index: chunk for chunk in chunks}
             hydrated: List[RetrievedChunk] = []

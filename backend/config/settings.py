@@ -38,14 +38,23 @@ API_CONFIG: Dict[str, Dict[str, Any]] = {
     "GROQ": {
         "base_url": "https://api.groq.com/openai/v1/",
         "api_key": os.getenv("GROQ_API_KEY"),
-        "models": {"default": os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"), "fast": os.getenv("GROQ_FAST_MODEL", "llama-3.1-70b-versatile")},
+        "models": {"default": os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"), "fast": os.getenv("GROQ_FAST_MODEL", "llama3-8b-8192")},
+    },
+
+    "OPENROUTER": {
+        "base_url": "https://openrouter.ai/api/v1/chat/completions",
+        "api_key": os.getenv("OPENROUTER_API_KEY"),
+        "models": {
+            "default": os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-r1-distill-llama-70b"),
+            "fallback": os.getenv("OPENROUTER_FALLBACK_MODEL", "qwen/qwen-2.5-72b-instruct"),
+        },
     },
     "COHERE": {
         "base_url": "https://api.cohere.com/v2/",
         "api_key": os.getenv("COHERE_API_KEY"),
-        "models": {"default": os.getenv("COHERE_MODEL", "command-r")},
+        "models": {"default": os.getenv("COHERE_MODEL", "rerank-v3.5")},
     },
-    # Legacy providers remain configured only for the current API client.
+    # DEPRECATED: OpenAI is deprecated from active debate solvers; retained only for optional fallback compatibility.
     "OPENAI": {
         "base_url": "https://api.openai.com/v1/",
         "api_key": os.getenv("OPENAI_API_KEY"),
@@ -57,6 +66,7 @@ API_CONFIG: Dict[str, Dict[str, Any]] = {
         "models": {"default": os.getenv("HUGGING_FACE_MODEL", "microsoft/Phi-3.5-mini-instruct")},
     },
 }
+
 
 SYSTEM_CONFIG: Dict[str, Any] = {
     "secret_key": os.getenv("SECRET_KEY", "dev-fallback-key-change-in-production"),
