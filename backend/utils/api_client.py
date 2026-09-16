@@ -1,25 +1,20 @@
 # -*- coding: utf-8 -*-
-"""
-API Client for Meta-Agent Math Debate System (Pro Hybrid Edition)
-
-UPDATED:
-- Added provider+model tag (F2) → api_used: "GROQ/8B"
-- Added latency tracking → api_latency_ms
-- Added safe optimized load_kwargs inside LocalLLM.__init__
-- No token/cost tracking (as requested)
-- No provider attempt history
-"""
-
-# TODO(Draft 2): Keep this compatibility client until ProviderRouter owns calls.
 from __future__ import annotations
+
+"""
+[DEPRECATED] Legacy API Client for Meta-Agent Math Debate System.
+
+NOTICE: This module is retained strictly for backward compatibility.
+All active Draft 2 agents, solvers, reflection, judge, and retrieval
+orchestration authoritatively use `backend.providers.router.ProviderRouter`.
+"""
 
 import os
 import sys
 import time
 import json
 import logging
-import google.generativeai as genai
-
+import warnings
 from typing import Dict, Any, List, Optional, Callable
 
 import requests
@@ -36,10 +31,6 @@ if _PROJECT_ROOT not in sys.path:
 
 from config import API_CONFIG, SYSTEM_CONFIG  # noqa: E402
 
-
-# ──────────────────────────────────────────────────────────────────────
-# Colored Logs
-# ──────────────────────────────────────────────────────────────────────
 try:
     from colorama import init as colorama_init, Fore, Style
     colorama_init()
@@ -58,17 +49,15 @@ except Exception:
 logger = logging.getLogger(__name__)
 
 # Default model names
-GROQ_MAIN = "llama-3.1-8b-instant"
-GROQ_FALLBACK = "llama-3.1-70b-versatile"
-
+GROQ_MAIN = "llama-3.3-70b-versatile"
+GROQ_FALLBACK = "llama3-8b-8192"
 OPENAI_MAIN = "gpt-4o-mini"
 OPENAI_EMBED = "text-embedding-3-small"
-
 GEMINI_MAIN = "gemini-2.5-flash"
 GEMINI_FALLBACK = "gemini-1.5-flash"
-
 HF_MAIN = "microsoft/Phi-3.5-mini-instruct"
 HF_EMBED = "all-MiniLM-L6-v2"
+
 
 
 # ──────────────────────────────────────────────────────────────────────

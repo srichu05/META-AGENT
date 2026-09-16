@@ -1,364 +1,115 @@
-# Technical Summary – Meta-Agent Math Debate System (Draft 2)
+# Technical Architecture – Meta-Agent Math Debate System (Draft 2)
 
 ---
 
-# Project Overview
+## 1. Project Overview
 
-The Meta-Agent Math Debate System is a Flask-based backend that solves mathematical problems through a multi-agent debate workflow supported by Retrieval-Augmented Generation (RAG).
+The **Meta-Agent Math Debate System** is a modular, production-ready Flask backend that solves complex mathematical problems through a multi-agent debate workflow supported by personalized Retrieval-Augmented Generation (RAG) and automated RAGAS evaluation.
 
-Unlike the previous prototype, Draft 2 is designed as a modular, scalable architecture capable of reasoning over user-uploaded mathematical documents rather than relying on fixed datasets such as GSM8K.
-
-The system emphasizes explainability, modularity, scalability, and production-ready design.
+The system emphasizes explainability, modularity, fault tolerance, and quantitative performance evaluation.
 
 ---
 
-# Backend Objectives
+## 2. Technology Stack
 
-- Modular multi-agent architecture
-- Personalized RAG over uploaded documents
-- Cloud LLM providers only
-- Hybrid retrieval pipeline
-- Explainable reasoning
-- Scalable provider routing
-- Production-ready backend
-
----
-
-# Backend Technology Stack
-
-## Backend Framework
-
-- Flask
-
-## Database
-
-- PostgreSQL
-
-## Vector Search
-
-- FAISS
-
-## Embeddings
-
-- BAAI BGE Embeddings
-
-## AI Frameworks
-
-- LangChain
-- LangGraph
-
-## Retrieval
-
-- BM25
-- Cohere Rerank
-
-## Evaluation
-
-- RAGAS
-
-## Cloud Providers
-
-- Gemini
-- Groq
-- Cohere
+- **Backend Framework**: Flask 3.0, Flask-CORS, Flask-SQLAlchemy, Flask-Migrate
+- **Relational Database**: PostgreSQL / SQLite (via SQLAlchemy ORM)
+- **Vector Search**: FAISS (`IndexFlatIP` inner-product similarity search)
+- **Embedding Model**: BAAI BGE Embeddings (`BAAI/bge-small-en-v1.5`, 384 dimensions)
+- **Lexical Retrieval**: BM25 keyword search
+- **Reranker**: Cohere Rerank (`rerank-v3.5`)
+- **Orchestration**: LangGraph DAG / LangChain Core (9-node state graph)
+- **Document Ingestion**: PyMuPDF (PDF), python-docx (DOCX), PaddleOCR (Image OCR)
+- **Evaluation & Benchmarking**: RAGAS (Faithfulness, Answer Relevance, Context Precision, Context Recall) + GSM8K benchmark harness
+- **Cloud LLM Providers**: Google Gemini, Groq, OpenRouter, Cohere
 
 ---
 
-# Core Backend Components
+## 3. End-to-End Orchestration Architecture
 
-## API Layer
-
-Responsible for:
-
-- REST API endpoints
-- Request validation
-- Response formatting
-- Communication with frontend
-
----
-
-## Provider Router
-
-Central routing layer responsible for:
-
-- Selecting LLM provider
-- Provider fallback
-- Rate-limit handling
-- Future scalability
-
-Supported providers:
-
-- Gemini
-- Groq
-- Cohere
-
----
-
-## Planner Agent
-
-Responsible for:
-
-- Understanding user intent
-- Planning reasoning workflow
-- Selecting retrieval strategy
-- Preparing execution flow
-
----
-
-## RAG Pipeline
-
-Responsible for:
-
-- Document ingestion
-- OCR processing
-- Chunk generation
-- Metadata extraction
-- Embedding generation
-- Hybrid retrieval
-- Context construction
-
-Supported uploads:
-
-- PDF
-- DOCX
-- TXT
-- Markdown
-- Images
-- Handwritten mathematical notes
-
----
-
-## Context Manager
-
-Responsible for:
-
-- Maintaining retrieved context
-- Organizing retrieved chunks
-- Preventing duplicated context
-- Preparing context for solver agents
-
----
-
-## Solver Agents
-
-Multiple reasoning agents independently solve the same mathematical problem using retrieved context.
-
-Each solver provides:
-
-- Step-by-step reasoning
-- Intermediate calculations
-- Confidence estimation
-
----
-
-## Reflection Agent
-
-Responsible for:
-
-- Reviewing solver outputs
-- Detecting inconsistencies
-- Correcting reasoning errors
-- Improving final answer quality
-
----
-
-## Judge Agent
-
-Responsible for:
-
-- Comparing solver outputs
-- Evaluating reasoning quality
-- Selecting the best solution
-- Producing final explanation
-
----
-
-## Citation Generator
-
-Responsible for:
-
-- Mapping generated answers to retrieved chunks
-- Producing source citations
-- Improving answer transparency
-
----
-
-# Retrieval Pipeline
-
-The retrieval system combines:
-
-- Semantic Search (FAISS)
-- Keyword Search (BM25)
-- Cohere Rerank
-
-This hybrid approach improves retrieval accuracy over pure vector search.
-
----
-
-# Database Responsibilities
-
-## PostgreSQL
-
-Stores:
-
-- User information
-- Uploaded documents
-- Chunk metadata
-- Debate history
-- Retrieval history
-- Provider logs
-- Evaluation results
-- Citation metadata
-
----
-
-## FAISS
-
-Stores:
-
-- Vector embeddings
-
-Only similarity search is performed inside FAISS.
-
-Metadata remains inside PostgreSQL.
-
----
-
-# Document Processing Pipeline
-
-Document Upload
-
-↓
-
-Document Parser
-
-↓
-
-OCR (if required)
-
-↓
-
-Text Cleaning
-
-↓
-
-Semantic Chunking
-
-↓
-
-Metadata Extraction
-
-↓
-
-Embedding Generation
-
-↓
-
-FAISS Index
-
-↓
-
-Metadata Storage (PostgreSQL)
-
----
-
-# Debate Workflow
-
+```
 User Query
-
-↓
-
-Planner Agent
-
-↓
-
-Retriever
-
-↓
-
-Hybrid Search
-
-↓
-
-Context Manager
-
-↓
-
-Solver Agent A
-
-↓
-
-Solver Agent B
-
-↓
-
-Solver Agent C
-
-↓
-
-Reflection Agent
-
-↓
-
-Judge Agent
-
-↓
-
-Citation Generator
-
-↓
-
-Final Response
+    ↓
+Planner Node (Query decomposition & retrieval strategy)
+    ↓
+Hybrid Retrieval Node (FAISS vector search + BM25 keyword search)
+    ↓
+RRF Fusion ($k=60$) & PostgreSQL Metadata Hydration
+    ↓
+Cohere Rerank Node (`rerank-v3.5` with fallback)
+    ↓
+Context Manager Node (Deduplication, score filtering, token budget)
+    ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Multi-Solver Parallel Reasoning Nodes                      │
+│ ├── Solver 1 (Analytical / Step-by-Step) → Google Gemini    │
+│ ├── Solver 2 (Fast / Algebraic)         → Groq              │
+│ └── Solver 3 (Alternative / Verification) → OpenRouter      │
+└─────────────────────────────────────────────────────────────┘
+    ↓
+Reflection Agent Node (Cross-solution contradiction & error audit)
+    ↓
+Judge Agent Node (Multi-criteria scoring & best solution selection)
+    ↓
+Citation Generator Node (Source document attribution)
+    ↓
+Final Answer + RAG Citations
+```
 
 ---
 
-# Design Principles
+## 4. Provider Gateway & Routing Architecture
 
-The backend follows the following principles:
+All cloud LLM and reranker calls are routed authoritatively through `ProviderRouter`:
 
-- Modular architecture
-- Loose coupling
-- Separation of responsibilities
-- Scalable provider integration
-- Replaceable components
-- Maintainable codebase
-- Explainable AI workflow
-
----
-
-# Scalability
-
-The architecture allows independent replacement of:
-
-- LLM providers
-- Embedding models
-- Retrieval algorithms
-- Vector databases
-- Evaluation framework
-- Debate workflow
-
-without requiring major backend redesign.
+- **Active Provider Adapters**:
+  - `GeminiAdapter`: Default reasoning engine (`gemini-2.5-flash`)
+  - `GroqAdapter`: High-speed inference (`llama-3.3-70b-versatile`)
+  - `OpenRouterAdapter`: Diverse reasoning solver (`deepseek/deepseek-r1-distill-llama-70b`)
+  - `CohereAdapter`: Reranking engine (`rerank-v3.5`)
+- **Resilience Features**:
+  - Automatic cross-provider fallback (`GEMINI -> GROQ -> OPENROUTER`)
+  - Response normalization into standardized `ProviderResponse` dataclass
+  - Latency, token usage, and error metrics tracked via `ProviderMetrics`
 
 ---
 
-# Future Expansion
+## 5. RAG Retrieval Subsystem
 
-The architecture is designed to support future additions including:
-
-- Authentication
-- User profiles
-- Conversation history
-- Agent memory
-- Streaming responses
-- Deployment on cloud infrastructure
-- Monitoring
-- Analytics
-- Additional reasoning agents
+1. **Document Ingestion**:
+   - Parses PDF, DOCX, TXT, Markdown, and handwritten notes/images via PaddleOCR.
+   - Cleans text and applies semantic chunking (`chunk_size=500`, `chunk_overlap=50`).
+   - Generates 384-d normalized BGE embeddings and appends to `document_vectors.faiss`.
+   - Stores chunk location metadata (`filename`, `page_number`, `section_heading`, `char_start`, `char_end`) in PostgreSQL.
+2. **Hybrid Retrieval**:
+   - Computes inner-product similarity across FAISS index ($w=0.7$).
+   - Computes BM25 keyword frequency scores ($w=0.3$).
+   - Merges candidate rankings using Reciprocal Rank Fusion ($RRF = \sum \frac{w}{60 + \text{rank}}$).
+   - Re-ranks top candidates via Cohere Rerank API.
+3. **Context Manager**:
+   - Deduplicates chunks, filters below similarity threshold, and formats structured prompt context within configurable character/token budget (`max_context_length=4000`).
 
 ---
 
-# Current Development Status
+## 6. Evaluation & Benchmarking Subsystem
 
-Draft 2 represents a complete architectural redesign of the original prototype.
+- **RAGAS Metric Evaluator** (`backend/evaluation/ragas_evaluator.py`):
+  - **Faithfulness**: Measures grounding of generated answer in retrieved context.
+  - **Answer Relevance**: Measures semantic alignment between user question and final answer.
+  - **Context Precision**: Measures rank positioning of relevant context chunks.
+  - **Context Recall**: Measures coverage of reference answer claims in context.
+- **GSM8K Benchmark Harness** (`backend/evaluation/dataset.py`, `backend/evaluation/benchmark_runner.py`):
+  - Curated 10-problem GSM8K dataset subset with reference answers.
+  - Executes questions end-to-end through `MathDebateGraph`, capturing all intermediate solver states, reflection notes, and judge decisions.
+  - Exports aggregated reports in JSON and CSV formats.
+- **Evaluation REST Endpoints**:
+  - `POST /api/evaluation/benchmark`: Triggers benchmark run over $N$ items.
+  - `GET /api/evaluation/benchmark`: Returns cached or fresh benchmark metrics report.
 
-The existing backend serves as the implementation foundation, while major components will be progressively refactored into the modular Draft 2 architecture through phase-wise development.
+---
+
+## 7. Database Architecture
+
+- **`documents`**: Tracks uploaded files, file hashes, MIME types, processing status, and OCR metadata.
+- **`document_chunks`**: Stores chunk text, character boundaries, section headings, page numbers, and deterministic `vector_index` pointers mapping to FAISS.
+- **`system_settings`**: Key-value runtime configuration persistence.

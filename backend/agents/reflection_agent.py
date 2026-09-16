@@ -5,11 +5,10 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from utils.api_client import APIClient
-
 from prompts.prompts import REFLECTION_SYSTEM_PROMPT
 from providers.router import ProviderRouter
 from providers.types import ProviderResponse
+
 
 logger = logging.getLogger(__name__)
 

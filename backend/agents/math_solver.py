@@ -21,8 +21,8 @@ load_dotenv()
 # Ensure the project root is in the Python path for robust imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from utils.api_client import APIClient
 from config import AGENT_ROLES, SYSTEM_CONFIG
+
 from prompts.prompts import get_prompt_template
 from providers.router import ProviderRouter
 from providers.types import ProviderResponse

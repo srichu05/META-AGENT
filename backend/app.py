@@ -125,14 +125,15 @@ def initialize_app() -> bool:
     try:
         logger.info("🚀 Initializing Meta-Agent Math Debate System (API-Only)...")
 
-        # Warn if external providers not set; allow local fallbacks if your APIClient supports it
-        required_env_vars = ["GROQ_API_KEY", "OPENAI_API_KEY", "COHERE_API_KEY", "HUGGING_FACE_API_KEY"]
+        # Warn if external cloud providers not set; allow fallbacks if supported
+        required_env_vars = ["GEMINI_API_KEY", "GROQ_API_KEY", "OPENROUTER_API_KEY", "COHERE_API_KEY"]
         missing_vars = [v for v in required_env_vars if not os.getenv(v)]
         if missing_vars:
             logger.warning(
-                "⚠️ Missing API keys for providers: %s — proceeding (local/other fallbacks may be used).",
+                "⚠️ Missing API keys for cloud providers: %s — proceeding with active/fallback providers.",
                 ", ".join(missing_vars),
             )
+
 
         data_processor = DataProcessor()
         meta_agent = MetaAgent()

@@ -5,12 +5,12 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from utils.api_client import APIClient
 from config import PROBLEM_TYPES, SYSTEM_CONFIG
 
 from prompts.prompts import PLANNER_SYSTEM_PROMPT
 from providers.router import ProviderRouter
 from providers.types import ProviderResponse
+
 
 logger = logging.getLogger(__name__)
 
