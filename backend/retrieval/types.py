@@ -77,6 +77,8 @@ class RetrievedContext:
     retrieval_time_ms: float = 0.0
     hybrid_used: bool = False
     rerank_used: bool = False
+    error: Optional[str] = None
+    rerank_status: str = "disabled"
 
     def to_dict(self) -> Dict[str, object]:
         return {
@@ -88,4 +90,6 @@ class RetrievedContext:
             "retrieval_time_ms": round(float(self.retrieval_time_ms), 2),
             "hybrid_used": self.hybrid_used,
             "rerank_used": self.rerank_used,
+            "error": self.error,
+            "rerank_status": self.rerank_status,
         }
