@@ -111,3 +111,4 @@ backend/database/*.csv
 backend/database/debate_history.json
 backend/database/problems.json
 backend/database/solutions.csv
+frontend/node_modules/
