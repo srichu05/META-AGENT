@@ -1,7 +1,7 @@
 """PostgreSQL metadata hydration for retrieved FAISS vector indices."""
 
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from flask import has_app_context
 
@@ -27,11 +27,15 @@ def _query_chunks_by_indices(vector_indices: List[int]) -> List[DocumentChunk]:
 class MetadataLookupService:
     """Hydrates vector search index results with relational PostgreSQL chunk and document metadata."""
 
+    def __init__(self):
+        self.last_error: Optional[str] = None
+
     def hydrate(self, index_score_pairs: List[Tuple[int, float]], default_source: str = "faiss") -> List[RetrievedChunk]:
         """
         Bulk queries PostgreSQL for DocumentChunk & Document records matching vector indices.
         Preserves the ranking order of the input index_score_pairs.
         """
+        self.last_error = None
         if not index_score_pairs:
             return []
 
@@ -40,7 +44,6 @@ class MetadataLookupService:
 
         try:
             chunks = _query_chunks_by_indices(vector_indices)
-
 
             chunk_map: Dict[int, DocumentChunk] = {chunk.vector_index: chunk for chunk in chunks}
             hydrated: List[RetrievedChunk] = []
@@ -72,5 +75,6 @@ class MetadataLookupService:
 
             return hydrated
         except Exception as error:
+            self.last_error = f"Metadata hydration error: {error}"
             logger.exception(f"PostgreSQL metadata hydration failed: {error}")
             return []
