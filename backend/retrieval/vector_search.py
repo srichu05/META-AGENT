@@ -1,7 +1,7 @@
 """FAISS vector search engine for query embedding & similarity index matching."""
 
 import logging
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -29,12 +29,14 @@ class FAISSQueryEngine:
             INGESTION_CONFIG["embedding_batch_size"],
             SYSTEM_CONFIG["embedding_dimension"],
         )
+        self.last_error: Optional[str] = None
 
     def search(self, query: str, top_k: int = 5) -> List[Tuple[int, float]]:
         """
         Embed query and perform FAISS similarity search.
         Returns list of (vector_index, score) tuples.
         """
+        self.last_error = None
         if not query or not query.strip():
             return []
 
@@ -54,5 +56,6 @@ class FAISSQueryEngine:
 
             return results
         except Exception as error:
+            self.last_error = f"FAISS search error: {error}"
             logger.exception(f"FAISS vector search failed for query '{query[:50]}...': {error}")
             return []
