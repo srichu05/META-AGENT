@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 class RerankerInterface:
     """Base interface for chunk reranking components."""
 
+    last_status: str = "disabled"
+
     def rerank(self, query: str, chunks: List[RetrievedChunk], top_k: int = 5) -> List[RetrievedChunk]:
         """Rerank and score chunks against query."""
         raise NotImplementedError
@@ -22,7 +24,10 @@ class RerankerInterface:
 class PassThroughReranker(RerankerInterface):
     """Fallback pass-through reranker that maintains current score ordering."""
 
+    last_status: str = "disabled"
+
     def rerank(self, query: str, chunks: List[RetrievedChunk], top_k: int = 5) -> List[RetrievedChunk]:
+        self.last_status = "disabled"
         return sorted(chunks, key=lambda c: c.score, reverse=True)[:top_k]
 
 
@@ -31,9 +36,10 @@ class CohereRerankerAdapter(RerankerInterface):
 
     def __init__(self, api_key: str = None, model: str = None):
         cfg = API_CONFIG.get("COHERE", {})
-        self.api_key = api_key or cfg.get("api_key")
+        self.api_key = api_key if api_key is not None else cfg.get("api_key")
         self.model = model or RAG_CONFIG.get("cohere_rerank_model", "rerank-v3.5")
         self.base_url = "https://api.cohere.com/v2/rerank"
+        self.last_status = "disabled"
 
     @property
     def is_available(self) -> bool:
@@ -41,10 +47,17 @@ class CohereRerankerAdapter(RerankerInterface):
 
     def rerank(self, query: str, chunks: List[RetrievedChunk], top_k: int = 5) -> List[RetrievedChunk]:
         if not chunks:
+            self.last_status = "skipped_empty"
             return []
 
-        if not self.is_available:
-            logger.debug("Cohere Rerank is disabled or missing API key. Using pass-through ranking.")
+        if not self.api_key:
+            self.last_status = "skipped_missing_credentials"
+            logger.debug("Cohere Rerank missing API key. Using pass-through ranking.")
+            return PassThroughReranker().rerank(query, chunks, top_k=top_k)
+
+        if not RAG_CONFIG.get("cohere_rerank_enabled", False):
+            self.last_status = "skipped_disabled"
+            logger.debug("Cohere Rerank is disabled in configuration. Using pass-through ranking.")
             return PassThroughReranker().rerank(query, chunks, top_k=top_k)
 
         try:
@@ -75,8 +88,10 @@ class CohereRerankerAdapter(RerankerInterface):
                     original_chunk.retrieval_source = f"{original_chunk.retrieval_source}+cohere_rerank"
                     reranked_chunks.append(original_chunk)
 
+            self.last_status = "success"
             return reranked_chunks if reranked_chunks else PassThroughReranker().rerank(query, chunks, top_k=top_k)
 
         except Exception as error:
+            self.last_status = "fallback"
             logger.warning(f"Cohere Rerank failed ({error}). Falling back to original ranking.")
             return PassThroughReranker().rerank(query, chunks, top_k=top_k)
