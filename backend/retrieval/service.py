@@ -42,12 +42,19 @@ class RetrievalService:
         chunks, hybrid_used, rerank_used = self.retriever.retrieve(query, top_k=k)
         retrieval_time_ms = (time.time() - start_time) * 1000.0
 
+        retriever_error = getattr(self.retriever, "last_error", None)
+        rerank_status = getattr(self.retriever, "last_rerank_status", "disabled")
+        empty_reason = getattr(self.retriever, "last_empty_reason", None)
+
         context = self.context_builder.build_context(
             query=query,
             chunks=chunks,
             retrieval_time_ms=retrieval_time_ms,
             hybrid_used=hybrid_used,
             rerank_used=rerank_used,
+            error=retriever_error,
+            rerank_status=rerank_status,
+            empty_reason=empty_reason,
         )
 
         logger.info(
