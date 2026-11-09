@@ -36,12 +36,14 @@ class BM25Retriever:
     def __init__(self, k1: float = 1.5, b: float = 0.75):
         self.k1 = k1
         self.b = b
+        self.last_error: Optional[str] = None
 
     def search(self, query: str, top_k: int = 5) -> List[Tuple[int, float]]:
         """
         Executes BM25 keyword scoring across all stored DocumentChunk records.
         Returns list of (vector_index, bm25_score) sorted descending by score.
         """
+        self.last_error = None
         query_tokens = _tokenize(query)
         if not query_tokens:
             return []
@@ -50,7 +52,6 @@ class BM25Retriever:
             chunks = _get_all_chunks()
             if not chunks:
                 return []
-
 
             N = len(chunks)
             doc_tokens_list: List[List[str]] = [_tokenize(c.content) for c in chunks]
@@ -86,5 +87,6 @@ class BM25Retriever:
             scored.sort(key=lambda item: item[1], reverse=True)
             return scored[:top_k]
         except Exception as error:
+            self.last_error = f"BM25 database/search error: {error}"
             logger.exception(f"BM25 keyword search failed: {error}")
             return []
