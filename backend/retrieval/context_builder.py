@@ -1,7 +1,7 @@
 """Context assembly and citation extraction for retrieved document chunks."""
 
 import logging
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from config import RAG_CONFIG
 from .types import Citation, RetrievedChunk, RetrievedContext
@@ -53,18 +53,32 @@ class ContextBuilder:
         retrieval_time_ms: float = 0.0,
         hybrid_used: bool = False,
         rerank_used: bool = False,
+        error: Optional[str] = None,
+        rerank_status: str = "disabled",
+        empty_reason: Optional[str] = None,
     ) -> RetrievedContext:
         """Assembles structured prompt context and citations within character budget."""
         if not chunks:
+            if error:
+                empty_msg = f"Retrieval encountered an error: {error}"
+            elif empty_reason == "vector_index_empty":
+                empty_msg = "No documents have been indexed yet in the vector database."
+            elif empty_reason == "no_matches_found":
+                empty_msg = "No relevant document context found matching query."
+            else:
+                empty_msg = "No relevant document context found."
+
             return RetrievedContext(
                 query=query,
-                formatted_context="No relevant document context found.",
+                formatted_context=empty_msg,
                 chunks=[],
                 citations=[],
                 total_chunks_retrieved=0,
                 retrieval_time_ms=retrieval_time_ms,
                 hybrid_used=hybrid_used,
                 rerank_used=rerank_used,
+                error=error,
+                rerank_status=rerank_status,
             )
 
         citations = self.citation_builder.build_citations(chunks)
@@ -96,4 +110,6 @@ class ContextBuilder:
             retrieval_time_ms=retrieval_time_ms,
             hybrid_used=hybrid_used,
             rerank_used=rerank_used,
+            error=error,
+            rerank_status=rerank_status,
         )
