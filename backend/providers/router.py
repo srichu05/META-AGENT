@@ -15,6 +15,26 @@ from providers.types import ProviderResponse
 logger = logging.getLogger(__name__)
 
 
+def _categorize_error(error: Optional[str]) -> str:
+    """Categorizes provider errors for standardized fallback reporting."""
+    if not error:
+        return "UNKNOWN_ERROR"
+    err = error.lower()
+    if any(k in err for k in ["401", "403", "unauthorized", "api_key", "invalid api key", "forbidden"]):
+        return "AUTHENTICATION_ERROR"
+    if any(k in err for k in ["429", "rate limit", "quota", "resource_exhausted", "too many requests"]):
+        return "RATE_LIMIT"
+    if any(k in err for k in ["404", "not found", "model_not_found"]):
+        return "MODEL_NOT_FOUND"
+    if any(k in err for k in ["timeout", "timed out"]):
+        return "TIMEOUT"
+    if any(k in err for k in ["connection", "connect", "dns", "unreachable"]):
+        return "CONNECTION_ERROR"
+    if any(k in err for k in ["500", "502", "503", "504", "internal server error", "overloaded", "bad gateway"]):
+        return "SERVER_ERROR"
+    return "PROVIDER_ERROR"
+
+
 class ProviderRouter:
     """Central gateway dispatching LLM requests with automatic provider fallback and metrics collection."""
 
@@ -60,9 +80,10 @@ class ProviderRouter:
         Dispatches generation request to target provider with automatic fallback order.
         Fallback sequence: target_provider -> GEMINI -> GROQ -> OPENROUTER.
         """
+        intended = (target_provider or "GEMINI").upper()
         order: List[str] = []
-        if target_provider and target_provider.upper() in self.adapters:
-            order.append(target_provider.upper())
+        if intended in self.adapters:
+            order.append(intended)
 
         fallback_seq = fallback_order or self.default_fallback_order
         for p in fallback_seq:
@@ -72,17 +93,21 @@ class ProviderRouter:
 
         last_response: Optional[ProviderResponse] = None
         retries = 0
+        attempts = 0
+        fallback_reasons: List[str] = []
+        last_error_category: Optional[str] = None
 
         for provider_name in order:
             adapter = self.adapters.get(provider_name)
             if not adapter or not adapter.is_configured:
                 continue
 
-            logger.info(f"📡 ProviderRouter: Dispatching call to '{provider_name}'...")
+            attempts += 1
+            logger.info(f"📡 ProviderRouter: Dispatching call to '{provider_name}' (attempt {attempts})...")
             res = adapter.generate(
                 prompt=prompt,
                 system_instruction=system_instruction,
-                model=model if provider_name.upper() == target_provider else None,
+                model=model if provider_name == intended else None,
                 max_tokens=max_tokens,
                 temperature=temperature,
             )
@@ -90,21 +115,49 @@ class ProviderRouter:
             self.metrics.record_call(res, retries=retries)
 
             if res.success:
-                logger.info(f"✅ ProviderRouter: Success from '{provider_name}' ({res.latency_ms:.1f}ms).")
+                res.intended_provider = intended
+                res.actual_provider = res.provider
+                res.actual_model = res.model
+                res.attempts = attempts
+                if res.provider.upper() != intended:
+                    res.fallback_occurred = True
+                    res.fallback_reason = "; ".join(fallback_reasons) if fallback_reasons else f"Target provider {intended} failed"
+                    res.error_category = last_error_category
+                else:
+                    res.fallback_occurred = False
+                    res.fallback_reason = None
+                    res.error_category = None
+
+                logger.info(
+                    f"✅ ProviderRouter: Success from '{provider_name}' ({res.latency_ms:.1f}ms). "
+                    f"fallback_occurred={res.fallback_occurred}"
+                )
                 return res
 
-            logger.warning(f"⚠️ ProviderRouter: '{provider_name}' failed ({res.error}). Trying fallback...")
+            err_cat = _categorize_error(res.error)
+            res.error_category = err_cat
+            last_error_category = err_cat
+            reason_str = f"{provider_name} [{err_cat}]: {res.error}"
+            fallback_reasons.append(reason_str)
+            logger.warning(f"⚠️ ProviderRouter: '{provider_name}' failed ({reason_str}). Trying fallback...")
             last_response = res
             retries += 1
 
         # All configured providers failed
-        error_msg = f"All cloud providers in order {order} failed." if last_response else "No configured cloud providers available."
+        error_msg = f"All cloud providers in order {order} failed ({'; '.join(fallback_reasons)})." if last_response else "No configured cloud providers available."
         logger.error(f"❌ ProviderRouter: {error_msg}")
 
         failed_response = ProviderResponse(
             success=False,
             provider="ROUTER_FALLBACK",
             model="NONE",
+            intended_provider=intended,
+            actual_provider="NONE",
+            actual_model="NONE",
+            fallback_occurred=(attempts > 1),
+            fallback_reason="; ".join(fallback_reasons) if fallback_reasons else "No providers available",
+            attempts=attempts,
+            error_category=last_error_category or "NO_PROVIDERS_AVAILABLE",
             error=error_msg,
         )
         self.metrics.record_call(failed_response, retries=retries)
