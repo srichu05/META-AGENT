@@ -82,7 +82,7 @@ def retrieval_node(state: DebateGraphState) -> DebateGraphState:
         _log_node_execution(state, "Retrieval", {"retrieval_skipped": True})
         return state
 
-    retrieved_obj = _retrieval_service.retrieve(query, top_k=top_k)
+    retrieved_obj = _retrieval_service.retrieve(query, top_k=top_k, user_id=state.get("user_id"))
     ret_dict = retrieved_obj.to_dict()
 
     state["retrieved_context"] = ret_dict
@@ -125,6 +125,8 @@ def context_manager_node(state: DebateGraphState) -> DebateGraphState:
         query=query,
         formatted_context=raw_retrieved.get("formatted_context", ""),
         chunks=chunks,
+        error=raw_retrieved.get("error"),
+        rerank_status=raw_retrieved.get("rerank_status", "disabled"),
     )
 
     managed_dict = _context_manager.process_context(context_obj, query=query)
@@ -168,6 +170,12 @@ def _run_solver_node(state: DebateGraphState, solver: MathSolverAgent, solver_na
         "solver_id": solver.agent_id,
         "answer": result.get("answer", ""),
         "confidence": result.get("confidence", 0.0),
+        "intended_provider": result.get("intended_provider", solver.target_provider),
+        "actual_provider": result.get("actual_provider", "UNKNOWN"),
+        "actual_model": result.get("actual_model", "UNKNOWN"),
+        "fallback_occurred": result.get("fallback_occurred", False),
+        "fallback_reason": result.get("fallback_reason"),
+        "attempts": result.get("attempts", 1),
     })
     return state
 
@@ -214,14 +222,49 @@ def judge_node(state: DebateGraphState) -> DebateGraphState:
     return state
 
 
-def citation_generator_node(state: DebateGraphState) -> DebateGraphState:
-    """Node 9: Citation Generator - Maps final response to retrieved document citations."""
-    managed_context = state.get("managed_context", {})
-    citations = managed_context.get("citations", [])
+def _is_citation_grounded(citation: Dict[str, Any], final_answer: str) -> bool:
+    """Verifies whether a retrieved citation was genuinely used or grounded in the final answer."""
+    if not final_answer:
+        return False
+    ans_lower = final_answer.lower()
+    cit_id = (citation.get("citation_id") or "").lower()
+    filename = (citation.get("filename") or "").lower()
 
-    state["citations"] = citations
+    # Direct explicit citation marker or filename mention
+    if cit_id and cit_id in ans_lower:
+        return True
+    if filename and len(filename) > 3 and filename in ans_lower:
+        return True
+
+    # Check substantive lexical overlap with chunk snippet
+    import re
+    snippet = citation.get("snippet") or ""
+    stopwords = {"this", "that", "with", "from", "have", "were", "what", "when", "where", "which", "then", "also"}
+    words = [w for w in re.findall(r"\b[a-zA-Z]{4,}\b", snippet.lower()) if w not in stopwords]
+    if not words:
+        return False
+
+    distinct_words = set(words)
+    matches = sum(1 for w in distinct_words if w in ans_lower)
+    return matches >= 2 and (matches / len(distinct_words)) >= 0.15
+
+
+def citation_generator_node(state: DebateGraphState) -> DebateGraphState:
+    """Node 9: Citation Generator - Maps final response to verified grounded citations."""
+    managed_context = state.get("managed_context", {})
+    all_citations = managed_context.get("citations", [])
+    final_answer = state.get("final_answer", "")
+
+    # Grounding filter: ensure only genuinely referenced sources are cited
+    grounded_citations = [
+        c for c in all_citations
+        if isinstance(c, dict) and _is_citation_grounded(c, final_answer)
+    ]
+
+    state["citations"] = grounded_citations
     _log_node_execution(state, "CitationGenerator", {
-        "total_citations": len(citations),
-        "citation_labels": [c.get("citation_id") for c in citations[:5]],
+        "total_citations": len(grounded_citations),
+        "total_candidate_citations": len(all_citations),
+        "citation_labels": [c.get("citation_id") for c in grounded_citations[:5]],
     })
     return state
