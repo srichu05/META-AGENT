@@ -66,6 +66,8 @@ class SingleEvaluationResult:
     provider_info: Dict[str, Any] = field(default_factory=dict)
     latency_ms: float = 0.0
     error: Optional[str] = None
+    evaluation_mode: str = "heuristic"
+    ragas_installed: bool = False
     timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
@@ -82,6 +84,8 @@ class SingleEvaluationResult:
             "provider_info": self.provider_info,
             "latency_ms": round(self.latency_ms, 2),
             "error": self.error,
+            "evaluation_mode": self.evaluation_mode,
+            "ragas_installed": self.ragas_installed,
             "timestamp": self.timestamp,
         }
 
@@ -96,6 +100,8 @@ class BenchmarkReport:
     average_scores: Dict[str, float] = field(default_factory=dict)
     average_latency_ms: float = 0.0
     results: List[SingleEvaluationResult] = field(default_factory=list)
+    evaluation_mode: str = "heuristic"
+    ragas_installed: bool = False
     timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
@@ -105,6 +111,8 @@ class BenchmarkReport:
             "failed_evaluations": self.failed_evaluations,
             "average_scores": {k: round(v, 4) for k, v in self.average_scores.items()},
             "average_latency_ms": round(self.average_latency_ms, 2),
+            "evaluation_mode": self.evaluation_mode,
+            "ragas_installed": self.ragas_installed,
             "results": [r.to_dict() for r in self.results],
             "timestamp": self.timestamp,
         }
@@ -127,6 +135,7 @@ class BenchmarkReport:
             "context_recall",
             "best_solver",
             "latency_ms",
+            "evaluation_mode",
             "status",
         ])
         for r in self.results:
@@ -142,6 +151,7 @@ class BenchmarkReport:
                 scores.get("context_recall", 0.0),
                 r.judge_result.get("best_agent", "N/A"),
                 round(r.latency_ms, 2),
+                r.evaluation_mode,
                 "SUCCESS" if not r.error else f"ERROR: {r.error}",
             ])
         return output.getvalue()

@@ -24,6 +24,20 @@ class RAGASEvaluator:
 
     def __init__(self, use_ragas_lib: bool = True):
         self.use_ragas_lib = use_ragas_lib and HAS_RAGAS_LIB
+        self.ragas_installed = HAS_RAGAS_LIB
+        self.evaluation_mode = "genuine_ragas" if self.use_ragas_lib else "heuristic"
+
+    def get_evaluation_metadata(self) -> Dict[str, Any]:
+        """Returns structured metadata about the evaluation engine mode."""
+        return {
+            "evaluation_mode": self.evaluation_mode,
+            "ragas_installed": self.ragas_installed,
+            "description": (
+                "Genuine RAGAS LLM-evaluated metrics"
+                if self.evaluation_mode == "genuine_ragas"
+                else "Built-in lexical/regex heuristic evaluation (RAGAS package not installed or unconfigured)"
+            ),
+        }
 
     def evaluate_all(
         self,
