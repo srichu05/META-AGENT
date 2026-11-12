@@ -34,7 +34,6 @@ class TestRAGPipeline(unittest.TestCase):
         self.app.config["TESTING"] = True
         self.app_context = self.app.app_context()
         self.app_context.push()
-        db.create_all()
 
         # Temporary FAISS index file
         self.temp_faiss_file = tempfile.NamedTemporaryFile(suffix=".faiss", delete=False)
@@ -42,8 +41,7 @@ class TestRAGPipeline(unittest.TestCase):
         self.temp_faiss_file.close()
 
     def tearDown(self):
-        db.session.remove()
-        db.drop_all()
+        db.session.rollback()
         self.app_context.pop()
         if os.path.exists(self.temp_faiss_path):
             try:

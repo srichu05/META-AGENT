@@ -28,11 +28,9 @@ class TestEvaluationSubsystem(unittest.TestCase):
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
         self.app_context.push()
-        db.create_all()
 
     def tearDown(self):
-        db.session.remove()
-        db.drop_all()
+        db.session.rollback()
         self.app_context.pop()
 
     def test_benchmark_dataset_loading(self):
