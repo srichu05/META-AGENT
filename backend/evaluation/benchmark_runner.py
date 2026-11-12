@@ -58,6 +58,10 @@ class BenchmarkRunner:
                 expected_context=item.expected_context,
             )
 
+            eval_meta = getattr(self.evaluator, "get_evaluation_metadata", lambda: {"evaluation_mode": "heuristic", "ragas_installed": False})()
+            mode = eval_meta.get("evaluation_mode", "heuristic")
+            installed = eval_meta.get("ragas_installed", False)
+
             metrics_summary = self.router.get_metrics_summary()
 
             return SingleEvaluationResult(
@@ -72,16 +76,21 @@ class BenchmarkRunner:
                 judge_result=judge_out,
                 provider_info=metrics_summary,
                 latency_ms=latency_ms,
+                evaluation_mode=mode,
+                ragas_installed=installed,
             )
         except Exception as error:
             latency_ms = (time.time() - start_time) * 1000.0
             logger.error(f"❌ Error during benchmark evaluation for '{item.question_id}': {error}", exc_info=True)
+            eval_meta = getattr(self.evaluator, "get_evaluation_metadata", lambda: {"evaluation_mode": "heuristic", "ragas_installed": False})()
             return SingleEvaluationResult(
                 question_id=item.question_id,
                 question=item.question,
                 reference_answer=item.reference_answer,
                 final_answer="EVALUATION_ERROR",
                 latency_ms=latency_ms,
+                evaluation_mode=eval_meta.get("evaluation_mode", "heuristic"),
+                ragas_installed=eval_meta.get("ragas_installed", False),
                 error=str(error),
             )
 
@@ -92,6 +101,10 @@ class BenchmarkRunner:
         """
         items = self.dataset.get_subset(limit=limit)
         logger.info(f"🚀 Starting benchmark evaluation over {len(items)} questions...")
+
+        eval_meta = getattr(self.evaluator, "get_evaluation_metadata", lambda: {"evaluation_mode": "heuristic", "ragas_installed": False})()
+        mode = eval_meta.get("evaluation_mode", "heuristic")
+        installed = eval_meta.get("ragas_installed", False)
 
         results: List[SingleEvaluationResult] = []
         successful_count = 0
@@ -131,6 +144,8 @@ class BenchmarkRunner:
             average_scores=avg_scores,
             average_latency_ms=avg_latency,
             results=results,
+            evaluation_mode=mode,
+            ragas_installed=installed,
         )
 
         logger.info(
