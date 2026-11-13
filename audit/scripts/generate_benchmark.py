@@ -1,0 +1,237 @@
+import json
+import hashlib
+
+items = [
+    {
+        "case_id": "gsm8k_001",
+        "question": "Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May?",
+        "reference_answer": "72",
+        "category": "arithmetic",
+        "expected_answer_type": "integer",
+        "source_dataset": "GSM8K",
+        "original_id": "gsm8k_001",
+        "verification_status": "verified",
+        "notes": "Two-step arithmetic: 48 + (48/2) = 72"
+    },
+    {
+        "case_id": "gsm8k_002",
+        "question": "Weng earns $12 an hour for babysitting. Yesterday, she babysat for 5 hours. Yesterday, she also earned $15 for walking dogs. How much money did Weng earn altogether yesterday?",
+        "reference_answer": "75",
+        "category": "word_problem",
+        "expected_answer_type": "currency_numeric",
+        "source_dataset": "GSM8K",
+        "original_id": "gsm8k_002",
+        "verification_status": "verified",
+        "notes": "Calculation: 5 * 12 + 15 = 75"
+    },
+    {
+        "case_id": "gsm8k_003",
+        "question": "Solve for x in the linear equation: 4x - 12 = 28.",
+        "reference_answer": "10",
+        "category": "algebra",
+        "expected_answer_type": "integer",
+        "source_dataset": "GSM8K",
+        "original_id": "gsm8k_003",
+        "verification_status": "verified",
+        "notes": "4x = 40 => x = 10"
+    },
+    {
+        "case_id": "gsm8k_004",
+        "question": "Betty is saving money for a new phone that costs $120. She has $40 already and earns $10 per week doing chores. How many weeks will it take Betty to save enough money to buy the phone?",
+        "reference_answer": "8",
+        "category": "money",
+        "expected_answer_type": "integer",
+        "source_dataset": "GSM8K",
+        "original_id": "gsm8k_004",
+        "verification_status": "verified",
+        "notes": "(120 - 40) / 10 = 8"
+    },
+    {
+        "case_id": "gsm8k_005",
+        "question": "A rectangle has a length of 15 cm and a width of 8 cm. What is the area and perimeter of the rectangle?",
+        "reference_answer": "Area = 120 cm^2, Perimeter = 46 cm",
+        "category": "geometry",
+        "expected_answer_type": "multi_part",
+        "source_dataset": "GSM8K",
+        "original_id": "gsm8k_005",
+        "verification_status": "verified",
+        "notes": "Area: 15*8 = 120; Perimeter: 2*(15+8) = 46"
+    },
+    {
+        "case_id": "gsm8k_006",
+        "question": "Janet’s ducks lay 16 eggs per day. She eats 3 for breakfast every morning and uses 4 each day to bake muffins. She sells the remainder at the farmers' market every day for $2 per egg. How much money does she make every day at the farmers' market?",
+        "reference_answer": "18",
+        "category": "word_problem",
+        "expected_answer_type": "currency_numeric",
+        "source_dataset": "GSM8K",
+        "original_id": "gsm8k_006",
+        "verification_status": "verified",
+        "notes": "Remainder: 16 - (3+4) = 9; Revenue: 9 * 2 = 18"
+    },
+    {
+        "case_id": "gsm8k_007",
+        "question": "A store offers a 20% discount on a jacket originally priced at $80. What is the final sale price of the jacket after discount?",
+        "reference_answer": "64",
+        "category": "percentage",
+        "expected_answer_type": "currency_numeric",
+        "source_dataset": "GSM8K",
+        "original_id": "gsm8k_007",
+        "verification_status": "verified",
+        "notes": "Discount: 0.20 * 80 = 16; Price: 80 - 16 = 64"
+    },
+    {
+        "case_id": "gsm8k_008",
+        "question": "A train travels at a constant speed of 60 miles per hour. How far will the train travel in 3 hours and 30 minutes?",
+        "reference_answer": "210",
+        "category": "time_distance",
+        "expected_answer_type": "numeric",
+        "source_dataset": "GSM8K",
+        "original_id": "gsm8k_008",
+        "verification_status": "verified",
+        "notes": "Distance = 60 * 3.5 = 210 miles"
+    },
+    {
+        "case_id": "gsm8k_009",
+        "question": "Solve the quadratic equation x^2 - 9 = 0 for x.",
+        "reference_answer": "3, -3",
+        "category": "algebra",
+        "expected_answer_type": "set_or_pair",
+        "source_dataset": "GSM8K",
+        "original_id": "gsm8k_009",
+        "verification_status": "verified",
+        "notes": "x = 3 or x = -3"
+    },
+    {
+        "case_id": "gsm8k_010",
+        "question": "In a box there are 5 red balls, 3 blue balls, and 2 green balls. What is the probability of randomly picking a blue ball?",
+        "reference_answer": "0.3",
+        "category": "probability",
+        "expected_answer_type": "fraction_or_decimal",
+        "source_dataset": "GSM8K",
+        "original_id": "gsm8k_010",
+        "verification_status": "verified",
+        "notes": "Total = 10, blue = 3 => 3/10 = 0.3"
+    },
+    {
+        "case_id": "sample_001",
+        "question": "A bakery sells cupcakes for $3 each. If Sarah buys 8 cupcakes and pays with a $50 bill, how much change will she receive?",
+        "reference_answer": "26",
+        "category": "money",
+        "expected_answer_type": "currency_numeric",
+        "source_dataset": "sample_problems",
+        "original_id": "sample_1",
+        "verification_status": "verified",
+        "notes": "Cost = 8 * 3 = 24; Change = 50 - 24 = 26"
+    },
+    {
+        "case_id": "sample_002",
+        "question": "A rectangular garden is 12 meters long and 8 meters wide. What is the perimeter of the garden?",
+        "reference_answer": "40",
+        "category": "geometry",
+        "expected_answer_type": "numeric",
+        "source_dataset": "sample_problems",
+        "original_id": "sample_2",
+        "verification_status": "verified",
+        "notes": "Perimeter = 2*(12 + 8) = 40"
+    },
+    {
+        "case_id": "sample_003",
+        "question": "Tom has 24 marbles. He gives 1/3 of them to his friend and 1/4 of the remaining marbles to his sister. How many marbles does Tom have left?",
+        "reference_answer": "12",
+        "category": "fractions",
+        "expected_answer_type": "integer",
+        "source_dataset": "sample_problems",
+        "original_id": "sample_3",
+        "verification_status": "verified",
+        "notes": "24 - 8 = 16; 16 - 4 = 12"
+    },
+    {
+        "case_id": "sample_004",
+        "question": "A car travels at 60 mph for 2.5 hours. How far does the car travel?",
+        "reference_answer": "150",
+        "category": "time_distance",
+        "expected_answer_type": "numeric",
+        "source_dataset": "sample_problems",
+        "original_id": "sample_4",
+        "verification_status": "verified",
+        "notes": "60 * 2.5 = 150 miles"
+    },
+    {
+        "case_id": "sample_005",
+        "question": "The sum of two consecutive even numbers is 46. What are the two numbers?",
+        "reference_answer": "22 and 24",
+        "category": "algebra",
+        "expected_answer_type": "integer_pair",
+        "source_dataset": "sample_problems",
+        "original_id": "sample_5",
+        "verification_status": "verified",
+        "notes": "2x + 2 = 46 => x = 22, next = 24"
+    },
+    {
+        "case_id": "sample_006",
+        "question": "A pizza is cut into 8 equal slices. If 3 people eat 2 slices each, what fraction of the pizza is left?",
+        "reference_answer": "1/4",
+        "category": "fractions",
+        "expected_answer_type": "fraction_or_decimal",
+        "source_dataset": "sample_problems",
+        "original_id": "sample_6",
+        "verification_status": "verified",
+        "notes": "Slices eaten: 6; Remaining: 2/8 = 1/4"
+    },
+    {
+        "case_id": "sample_007",
+        "question": "A store offers a 20% discount on a jacket that originally costs $80. What is the final price after the discount?",
+        "reference_answer": "64",
+        "category": "percentage",
+        "expected_answer_type": "currency_numeric",
+        "source_dataset": "sample_problems",
+        "original_id": "sample_7",
+        "verification_status": "verified",
+        "notes": "80 - 16 = 64"
+    },
+    {
+        "case_id": "sample_008",
+        "question": "In a class of 30 students, 18 are girls. What percentage of the class are boys?",
+        "reference_answer": "40%",
+        "category": "percentage",
+        "expected_answer_type": "percentage",
+        "source_dataset": "sample_problems",
+        "original_id": "sample_8",
+        "verification_status": "verified",
+        "notes": "Boys: 12/30 = 40%"
+    },
+    {
+        "case_id": "sample_009",
+        "question": "A triangle has sides of length 3 cm, 4 cm, and 5 cm. What is its area?",
+        "reference_answer": "6",
+        "category": "geometry",
+        "expected_answer_type": "numeric",
+        "source_dataset": "sample_problems",
+        "original_id": "sample_9",
+        "verification_status": "verified",
+        "notes": "Right triangle: 0.5 * 3 * 4 = 6"
+    },
+    {
+        "case_id": "sample_010",
+        "question": "A coin is flipped 3 times. What is the probability of getting exactly 2 heads?",
+        "reference_answer": "3/8",
+        "category": "probability",
+        "expected_answer_type": "fraction_or_decimal",
+        "source_dataset": "sample_problems",
+        "original_id": "sample_10",
+        "verification_status": "verified",
+        "notes": "Outcomes: 8; Favorable: 3 (HHT, HTH, THH) => 3/8"
+    }
+]
+
+out_path = r"audit\baseline_v1\math_benchmark.jsonl"
+with open(out_path, "w", encoding="utf-8") as f:
+    for item in items:
+        f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+with open(out_path, "rb") as f:
+    sha = hashlib.sha256(f.read()).hexdigest()
+
+print(f"Generated {len(items)} items in {out_path}")
+print("SHA-256:", sha)
+

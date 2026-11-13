@@ -1,0 +1,408 @@
+{
+  "manifest": {
+    "timestamp_utc": "2026-10-30T18:12:57.474669",
+    "phase": "Phase 1 - Baseline Audit, Profiling & Evaluation",
+    "git_commit": "85c9af20c0958ef41e70f54002f494b1d1481765",
+    "environment": {
+      "os": "Windows 10 (10.0.22621)",
+      "python_version": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+      "architecture": "AMD64"
+    },
+    "system_configuration": {
+      "primary_provider": "GEMINI (gemini-2.5-flash)",
+      "secondary_providers": "GROQ (misconfigured model 404), OPENROUTER (misconfigured model)",
+      "reranker": "COHERE (configured rerank-v3.5, feature flag disabled: PassThroughReranker active)",
+      "embeddings": "BAAI/bge-small-en-v1.5 (384-dimensional dense vectors)",
+      "vector_store": "FAISS (IndexFlatIP, cosine normalized)",
+      "keyword_retriever": "BM25Okapi (rank_bm25)",
+      "hybrid_fusion": "Reciprocal Rank Fusion (RRF, k=60)",
+      "orchestration": "Built-in Linear Stateful DAG Fallback (langgraph uninstalled)",
+      "evaluator": "Regex/Heuristic Fallback Evaluator (ragas uninstalled)",
+      "database": "PostgreSQL via SQLAlchemy (engine connected, tables unmigrated)"
+    },
+    "artifacts_generated": [
+      "audit/baseline_v1/README.md",
+      "audit/baseline_v1/baseline_manifest.json",
+      "audit/baseline_v1/architecture_audit.md",
+      "audit/baseline_v1/math_benchmark.jsonl",
+      "audit/baseline_v1/math_results.jsonl",
+      "audit/baseline_v1/retrieval_results.jsonl",
+      "audit/baseline_v1/judge_results.jsonl",
+      "audit/baseline_v1/performance_results.jsonl",
+      "audit/baseline_v1/cache_query_pairs.jsonl",
+      "audit/baseline_v1/security_test_cases.jsonl",
+      "audit/baseline_v1/security_results.jsonl",
+      "audit/baseline_v1/metrics_summary.json",
+      "audit/baseline_v1/baseline_report.md"
+    ]
+  },
+  "math_accuracy_and_reasoning": {
+    "benchmark_dataset_size": 20,
+    "correct_answers": 2,
+    "accuracy_pct": 10.0,
+    "execution_success_rate_pct": 100.0,
+    "latency_stats_seconds": {
+      "p50": 31.99,
+      "p90": 37.21,
+      "p95": 56.65,
+      "mean": 34.52,
+      "min": 18.41,
+      "max": 87.54,
+      "std": 14.53
+    },
+    "by_category": {
+      "arithmetic": {
+        "total": 1,
+        "correct": 1,
+        "accuracy_pct": 100.0,
+        "mean_latency_s": 37.21
+      },
+      "algebra": {
+        "total": 3,
+        "correct": 1,
+        "accuracy_pct": 33.3,
+        "mean_latency_s": 28.71
+      },
+      "word_problem": {
+        "total": 2,
+        "correct": 0,
+        "accuracy_pct": 0.0,
+        "mean_latency_s": 28.42
+      },
+      "money": {
+        "total": 2,
+        "correct": 0,
+        "accuracy_pct": 0.0,
+        "mean_latency_s": 53.74
+      },
+      "geometry": {
+        "total": 3,
+        "correct": 0,
+        "accuracy_pct": 0.0,
+        "mean_latency_s": 40.55
+      },
+      "percentage": {
+        "total": 3,
+        "correct": 0,
+        "accuracy_pct": 0.0,
+        "mean_latency_s": 31.73
+      },
+      "time_distance": {
+        "total": 2,
+        "correct": 0,
+        "accuracy_pct": 0.0,
+        "mean_latency_s": 36.39
+      },
+      "probability": {
+        "total": 2,
+        "correct": 0,
+        "accuracy_pct": 0.0,
+        "mean_latency_s": 25.3
+      },
+      "fractions": {
+        "total": 2,
+        "correct": 0,
+        "accuracy_pct": 0.0,
+        "mean_latency_s": 31.2
+      }
+    },
+    "error_cases": [
+      {
+        "case_id": "gsm8k_002",
+        "question": "Weng earns $12 an hour for babysitting. Yesterday, she babysat for 5 hours. Yesterday, she also earned $15 for walking dogs. How much money did Weng earn altogether yesterday?",
+        "reference": "75",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "gsm8k_004",
+        "question": "Betty is saving money for a new phone that costs $120. She has $40 already and earns $10 per week doing chores. How many weeks will it take Betty to save enough money to buy the phone?",
+        "reference": "8",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "gsm8k_005",
+        "question": "A rectangle has a length of 15 cm and a width of 8 cm. What is the area and perimeter of the rectangle?",
+        "reference": "Area = 120 cm^2, Perimeter = 46 cm",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "gsm8k_006",
+        "question": "Janet\u2019s ducks lay 16 eggs per day. She eats 3 for breakfast every morning and uses 4 each day to bake muffins. She sells the remainder at the farmers' market every day for $2 per egg. How much money does she make every day at the farmers' market?",
+        "reference": "18",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "gsm8k_007",
+        "question": "A store offers a 20% discount on a jacket originally priced at $80. What is the final sale price of the jacket after discount?",
+        "reference": "64",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "gsm8k_008",
+        "question": "A train travels at a constant speed of 60 miles per hour. How far will the train travel in 3 hours and 30 minutes?",
+        "reference": "210",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "gsm8k_009",
+        "question": "Solve the quadratic equation x^2 - 9 = 0 for x.",
+        "reference": "3, -3",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "gsm8k_010",
+        "question": "In a box there are 5 red balls, 3 blue balls, and 2 green balls. What is the probability of randomly picking a blue ball?",
+        "reference": "0.3",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "sample_001",
+        "question": "A bakery sells cupcakes for $3 each. If Sarah buys 8 cupcakes and pays with a $50 bill, how much change will she receive?",
+        "reference": "26",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "sample_002",
+        "question": "A rectangular garden is 12 meters long and 8 meters wide. What is the perimeter of the garden?",
+        "reference": "40",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "sample_003",
+        "question": "Tom has 24 marbles. He gives 1/3 of them to his friend and 1/4 of the remaining marbles to his sister. How many marbles does Tom have left?",
+        "reference": "12",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "sample_004",
+        "question": "A car travels at 60 mph for 2.5 hours. How far does the car travel?",
+        "reference": "150",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "sample_005",
+        "question": "The sum of two consecutive even numbers is 46. What are the two numbers?",
+        "reference": "22 and 24",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "sample_006",
+        "question": "A pizza is cut into 8 equal slices. If 3 people eat 2 slices each, what fraction of the pizza is left?",
+        "reference": "1/4",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "sample_007",
+        "question": "A store offers a 20% discount on a jacket that originally costs $80. What is the final price after the discount?",
+        "reference": "64",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "sample_008",
+        "question": "In a class of 30 students, 18 are girls. What percentage of the class are boys?",
+        "reference": "40%",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "sample_009",
+        "question": "A triangle has sides of length 3 cm, 4 cm, and 5 cm. What is its area?",
+        "reference": "6",
+        "extracted": "",
+        "reason": "Extraction failure"
+      },
+      {
+        "case_id": "sample_010",
+        "question": "A coin is flipped 3 times. What is the probability of getting exactly 2 heads?",
+        "reference": "3/8",
+        "extracted": "",
+        "reason": "Extraction failure"
+      }
+    ],
+    "reflection_metrics": {
+      "contradiction_rate_pct": 5.0,
+      "hallucination_rate_pct": 0.0
+    },
+    "judge_winner_distribution": {
+      "solver_1": 20
+    }
+  },
+  "retrieval_and_reranking": {
+    "controlled_retrieval_queries": 10,
+    "recall_at_1_pct": 100.0,
+    "recall_at_3_pct": 100.0,
+    "recall_at_5_pct": 100.0,
+    "mean_mrr": 1.0,
+    "component_latencies_ms": {
+      "bm25": {
+        "p50": 1.01,
+        "p90": 2.01,
+        "p95": 2.73,
+        "mean": 1.28,
+        "min": 0.0,
+        "max": 2.73,
+        "std": 0.72
+      },
+      "faiss_bge": {
+        "p50": 116.01,
+        "p90": 238.61,
+        "p95": 238.88,
+        "mean": 145.53,
+        "min": 100.69,
+        "max": 238.88,
+        "std": 51.15
+      },
+      "rrf_fusion": {
+        "p50": 0,
+        "p90": 0,
+        "p95": 0,
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "std": 0.0
+      },
+      "cohere_rerank": {
+        "p50": 0.0,
+        "p90": 0.41,
+        "p95": 1.0,
+        "mean": 0.14,
+        "min": 0.0,
+        "max": 1.0,
+        "std": 0.31
+      },
+      "total_retrieval": {
+        "p50": 118.03,
+        "p90": 238.88,
+        "p95": 240.61,
+        "mean": 146.95,
+        "min": 103.11,
+        "max": 240.61,
+        "std": 50.83
+      }
+    },
+    "cohere_status": "configured_but_disabled_by_default",
+    "database_state": "tables_uninitialized_in_postgres"
+  },
+  "llm_judge_reliability": {
+    "position_sensitivity_probes": 5,
+    "position_flips": 1,
+    "position_consistency_rate_pct": 80.0,
+    "verbosity_sensitivity_probes": 3,
+    "verbosity_preference_rate_pct": 100.0,
+    "key_vulnerability": "Fallback selection picks first element in list on tie; LLM judge exhibits 100% verbosity bias when mathematical correctness is identical."
+  },
+  "semantic_caching_suitability": {
+    "total_evaluated_pairs": 25,
+    "similarity_by_relation": {
+      "identical": {
+        "count": 2,
+        "mean_cosine_similarity": 1.0,
+        "min_cosine_similarity": 1.0,
+        "max_cosine_similarity": 1.0
+      },
+      "paraphrase": {
+        "count": 6,
+        "mean_cosine_similarity": 0.9058,
+        "min_cosine_similarity": 0.8199,
+        "max_cosine_similarity": 0.9685
+      },
+      "number_change": {
+        "count": 6,
+        "mean_cosine_similarity": 0.9424,
+        "min_cosine_similarity": 0.8969,
+        "max_cosine_similarity": 0.9917
+      },
+      "operator_constraint_change": {
+        "count": 5,
+        "mean_cosine_similarity": 0.9576,
+        "min_cosine_similarity": 0.9355,
+        "max_cosine_similarity": 0.9936
+      },
+      "different_document": {
+        "count": 3,
+        "mean_cosine_similarity": 0.8836,
+        "min_cosine_similarity": 0.8611,
+        "max_cosine_similarity": 0.9097
+      },
+      "corpus_dependent": {
+        "count": 3,
+        "mean_cosine_similarity": 0.8976,
+        "min_cosine_similarity": 0.8379,
+        "max_cosine_similarity": 0.9505
+      }
+    },
+    "critical_finding": "Non-equivalent math problems with different constants exhibit cosine similarities up to 0.9917, and different operators up to 0.9936. Standard semantic cache thresholding (e.g., >= 0.85 or 0.90) WILL produce catastrophic false cache hits without exact numerical validation."
+  },
+  "rag_security_posture": {
+    "total_security_tests": 30,
+    "tests_passed": 30,
+    "overall_pass_rate_pct": 100.0,
+    "category_breakdown": {
+      "direct_prompt_injection": {
+        "total": 5,
+        "passed": 5,
+        "pass_rate_pct": 100.0
+      },
+      "system_prompt_extraction": {
+        "total": 5,
+        "passed": 5,
+        "pass_rate_pct": 100.0
+      },
+      "mixed_instruction_math": {
+        "total": 3,
+        "passed": 3,
+        "pass_rate_pct": 100.0
+      },
+      "citation_manipulation": {
+        "total": 2,
+        "passed": 2,
+        "pass_rate_pct": 100.0
+      },
+      "retrieval_manipulation": {
+        "total": 2,
+        "passed": 2,
+        "pass_rate_pct": 100.0
+      },
+      "context_flooding": {
+        "total": 1,
+        "passed": 1,
+        "pass_rate_pct": 100.0
+      },
+      "unicode_anomalies": {
+        "total": 4,
+        "passed": 4,
+        "pass_rate_pct": 100.0
+      },
+      "mathematical_edge_cases": {
+        "total": 2,
+        "passed": 2,
+        "pass_rate_pct": 100.0
+      },
+      "cross_tenant_access": {
+        "total": 2,
+        "passed": 2,
+        "pass_rate_pct": 100.0
+      },
+      "malformed_upload_validation": {
+        "total": 4,
+        "passed": 4,
+        "pass_rate_pct": 100.0
+      }
+    }
+  }
+}

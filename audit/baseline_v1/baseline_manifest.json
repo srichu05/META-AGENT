@@ -1,0 +1,37 @@
+{
+  "timestamp_utc": "2026-10-30T18:12:57.474669",
+  "phase": "Phase 1 - Baseline Audit, Profiling & Evaluation",
+  "git_commit": "85c9af20c0958ef41e70f54002f494b1d1481765",
+  "environment": {
+    "os": "Windows 10 (10.0.22621)",
+    "python_version": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+    "architecture": "AMD64"
+  },
+  "system_configuration": {
+    "primary_provider": "GEMINI (gemini-2.5-flash)",
+    "secondary_providers": "GROQ (misconfigured model 404), OPENROUTER (misconfigured model)",
+    "reranker": "COHERE (configured rerank-v3.5, feature flag disabled: PassThroughReranker active)",
+    "embeddings": "BAAI/bge-small-en-v1.5 (384-dimensional dense vectors)",
+    "vector_store": "FAISS (IndexFlatIP, cosine normalized)",
+    "keyword_retriever": "BM25Okapi (rank_bm25)",
+    "hybrid_fusion": "Reciprocal Rank Fusion (RRF, k=60)",
+    "orchestration": "Built-in Linear Stateful DAG Fallback (langgraph uninstalled)",
+    "evaluator": "Regex/Heuristic Fallback Evaluator (ragas uninstalled)",
+    "database": "PostgreSQL via SQLAlchemy (engine connected, tables unmigrated)"
+  },
+  "artifacts_generated": [
+    "audit/baseline_v1/README.md",
+    "audit/baseline_v1/baseline_manifest.json",
+    "audit/baseline_v1/architecture_audit.md",
+    "audit/baseline_v1/math_benchmark.jsonl",
+    "audit/baseline_v1/math_results.jsonl",
+    "audit/baseline_v1/retrieval_results.jsonl",
+    "audit/baseline_v1/judge_results.jsonl",
+    "audit/baseline_v1/performance_results.jsonl",
+    "audit/baseline_v1/cache_query_pairs.jsonl",
+    "audit/baseline_v1/security_test_cases.jsonl",
+    "audit/baseline_v1/security_results.jsonl",
+    "audit/baseline_v1/metrics_summary.json",
+    "audit/baseline_v1/baseline_report.md"
+  ]
+}
