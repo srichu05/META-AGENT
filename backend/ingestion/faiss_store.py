@@ -71,6 +71,42 @@ class FAISSVectorStore:
         self._index = None
         self._load()
 
+    def verify_integrity(self) -> dict:
+        """Inspects FAISS index file on disk, validates dimension, readable vectors, and file size."""
+        if not self.index_path.exists():
+            return {
+                "valid": False,
+                "error": f"FAISS index file does not exist at {self.index_path}",
+                "vector_count": 0,
+                "dimension": self.expected_dimension,
+                "path": str(self.index_path),
+            }
+        if self.index_path.stat().st_size == 0:
+            return {
+                "valid": False,
+                "error": f"FAISS index file is empty (0 bytes) at {self.index_path}",
+                "vector_count": 0,
+                "dimension": self.expected_dimension,
+                "path": str(self.index_path),
+            }
+        try:
+            self._load()
+            return {
+                "valid": True,
+                "vector_count": int(self._index.ntotal),
+                "dimension": int(self._index.d),
+                "path": str(self.index_path),
+                "file_size_bytes": self.index_path.stat().st_size,
+            }
+        except Exception as err:
+            return {
+                "valid": False,
+                "error": str(err),
+                "vector_count": 0,
+                "dimension": self.expected_dimension,
+                "path": str(self.index_path),
+            }
+
     def _load(self, dimension: Optional[int] = None) -> None:
         if self._index is not None:
             return

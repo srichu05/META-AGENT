@@ -2,6 +2,7 @@
 
 from datetime import datetime
 import logging
+from typing import Any, Dict, List, Optional
 import uuid
 
 from werkzeug.datastructures import FileStorage
@@ -43,7 +44,7 @@ class DocumentIngestionService:
             SYSTEM_CONFIG["embedding_dimension"],
         )
 
-    def ingest(self, file: FileStorage):
+    def ingest(self, file: FileStorage, user_id: Optional[str] = None):
         document_id = str(uuid.uuid4())
         stored_upload = self.storage.save(file, document_id)
         parsed_document = self.parsers.get_parser(stored_upload.file_type).parse(stored_upload.storage_path)
@@ -68,6 +69,7 @@ class DocumentIngestionService:
 
             document = Document(
                 id=document_id,
+                user_id=user_id or "system",
                 filename=stored_upload.filename,
                 stored_filename=stored_upload.stored_filename,
                 file_type=stored_upload.file_type,

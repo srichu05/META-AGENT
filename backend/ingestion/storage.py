@@ -30,14 +30,28 @@ class UploadStorage:
         if not file or not file.filename:
             raise UploadValidationError("A file is required.")
 
+        import re
+        if not document_id or not re.match(r"^[a-zA-Z0-9_-]+$", document_id):
+            raise UploadValidationError("Invalid document identifier.")
+
         filename = secure_filename(file.filename)
         if not filename:
             raise UploadValidationError("The uploaded filename is invalid.")
 
         file_type = self.detect_file_type(filename)
-        document_folder = self.upload_folder / document_id
+        document_folder = (self.upload_folder / document_id).resolve()
+        
+        # Guard against upload folder path traversal escape
+        upload_root = self.upload_folder.resolve()
+        if not str(document_folder).startswith(str(upload_root)):
+            raise UploadValidationError("Invalid storage path destination.")
+
         document_folder.mkdir(parents=True, exist_ok=True)
         storage_path = document_folder / filename
+
+        if not str(storage_path.resolve()).startswith(str(upload_root)):
+            raise UploadValidationError("Destination escapes upload root.")
+
         file.save(str(storage_path))
 
         if storage_path.stat().st_size == 0:

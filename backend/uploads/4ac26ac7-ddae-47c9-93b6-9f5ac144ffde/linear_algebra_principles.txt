@@ -1,0 +1,11 @@
+# Linear Algebra and Matrix Principles
+
+## Section 1: Determinants of Square Matrices
+For a 2x2 matrix A with rows [a, b] and [c, d], the determinant is det(A) = ad - bc.
+A matrix is invertible if and only if its determinant is non-zero (det(A) != 0).
+If det(A) = 0, the matrix is singular and has linearly dependent rows.
+
+## Section 2: Eigenvalues and Characteristic Equation
+An eigenvalue lambda and eigenvector v for a square matrix A satisfy the equation A * v = lambda * v.
+The eigenvalues are found by solving the characteristic equation: det(A - lambda * I) = 0.
+The trace of a square matrix equals the sum of its eigenvalues, and the determinant equals their product.
