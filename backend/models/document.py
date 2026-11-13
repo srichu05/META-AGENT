@@ -9,6 +9,7 @@ class Document(db.Model):
     __tablename__ = "documents"
 
     id = db.Column(db.String(36), primary_key=True)
+    user_id = db.Column(db.String(64), nullable=True, index=True, default="system")
     filename = db.Column(db.String(512), nullable=False)
     stored_filename = db.Column(db.String(512), nullable=False)
     file_type = db.Column(db.String(32), nullable=False, index=True)
@@ -27,6 +28,7 @@ class Document(db.Model):
     def to_dict(self, include_chunks=False):
         data = {
             "document_id": self.id,
+            "user_id": self.user_id,
             "filename": self.filename,
             "file_type": self.file_type,
             "text_length": self.text_length,
