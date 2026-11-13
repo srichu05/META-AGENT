@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meta-Agent Math Debate System</title>
+
+    <!-- Material 3 Revamp Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+
+        <!-- Header -->
+        <header class="header">
+            <h1><i class="fas fa-brain"></i> Meta-Agent Math Debate System</h1>
+            <p>AI-powered collaborative problem solving with RAG-enhanced agents</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="solve">Problem Solver</button>
+            <button class="tab-btn" data-tab="debate">Agent Debate</button>
+            <button class="tab-btn" data-tab="analyze">Problem Analysis</button>
+            <button class="tab-btn" data-tab="stats">System Stats</button>
+            <button class="tab-btn" data-tab="evaluation">Evaluation Metrics</button>
+            <button class="tab-btn" data-tab="corpus">Knowledge Corpus</button>
+        </nav>
+
+        <!-- ==================== PROBLEM SOLVER TAB ==================== -->
+        <section id="solve-tab" class="tab-content active">
+            <div class="card">
+                <h2 class="section-title"><i class="fas fa-calculator"></i> Solve Math Problem</h2>
+
+                <div class="input-group">
+                    <label for="problem-input">Enter your math problem:</label>
+                    <textarea id="problem-input" rows="3"
+                        placeholder="e.g., A store sells apples for ₹120 per kg. If John buys 5 kg of apples and pays with ₹1000, how much change will he receive?"></textarea>
+                </div>
+
+                <div class="button-group">
+                    <button id="solve-btn" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Solve Problem
+                    </button>
+                    <button id="load-sample-btn" class="btn btn-secondary">
+                        <i class="fas fa-random"></i> Load Sample
+                    </button>
+                </div>
+
+                <div id="solution-result" class="card fade-in" style="display: none;">
+                    <h3>Solution Result</h3>
+
+                    <div class="result-grid">
+                        <div class="result-item"><strong>Best Agent:</strong> <span id="best-agent"></span></div>
+                        <div class="result-item"><strong>Answer:</strong> <span id="final-answer"></span></div>
+                        <div class="result-item"><strong>Confidence:</strong> <span id="confidence-score"></span></div>
+                        <div class="result-item"><strong>Time Taken:</strong> <span id="solve-time"></span></div>
+                    </div>
+
+                    <div class="solution-details">
+                        <h4>Detailed Solution:</h4>
+                        <div id="solution-text" class="solution-box"></div>
+                    </div>
+
+                    <div class="similar-problems">
+                        <h4>Similar Problems Used:</h4>
+                        <div id="similar-problems-list"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== AGENT DEBATE TAB ==================== -->
+        <section id="debate-tab" class="tab-content">
+            <div class="card">
+                <h2 class="section-title"><i class="fas fa-comments"></i> Agent Debate System</h2>
+
+                <div class="input-group">
+                    <label for="debate-problem-input">Problem for debate:</label>
+                    <textarea id="debate-problem-input" rows="3"
+                        placeholder="Enter a challenging math problem that requires multiple perspectives"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="debate-rounds">Number of debate rounds:</label>
+                    <input type="number" id="debate-rounds" min="1" max="5" value="3">
+                </div>
+
+                <button id="start-debate-btn" class="btn btn-primary">
+                    <i class="fas fa-gavel"></i> Start Debate
+                </button>
+
+                <div id="debate-result" class="card fade-in" style="display: none;">
+                    <h3>Debate Results</h3>
+
+                    <div class="result-grid">
+                        <div class="result-item"><strong>Winner:</strong> <span id="debate-winner"></span></div>
+                        <div class="result-item"><strong>Final Solution:</strong> <span id="debate-solution"></span>
+                        </div>
+                        <div class="result-item"><strong>Rounds:</strong> <span id="debate-rounds-count"></span></div>
+                    </div>
+
+                    <div class="debate-history">
+                        <h4>Debate History:</h4>
+                        <div id="debate-timeline" class="debate-timeline"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PROBLEM ANALYSIS TAB ==================== -->
+        <section id="analyze-tab" class="tab-content">
+            <div class="card">
+                <h2 class="section-title"><i class="fas fa-search"></i> Problem Analysis</h2>
+
+                <div class="input-group">
+                    <label for="analyze-input">Problem to analyze:</label>
+                    <textarea id="analyze-input" rows="3"
+                        placeholder="Enter a math problem to get analysis and hints"></textarea>
+                </div>
+
+                <button id="analyze-btn" class="btn btn-primary">
+                    <i class="fas fa-microscope"></i> Analyze Problem
+                </button>
+
+                <div id="analysis-result" class="card fade-in" style="display: none;">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Problem Type</div>
+                            <div id="problem-type" class="stat-value"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Key Concepts</div>
+                            <div id="key-concepts" class="stat-value"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Difficulty Level</div>
+                            <div id="difficulty-level" class="stat-value"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Solution Approaches</div>
+                            <div id="solution-approaches" class="stat-value"></div>
+                        </div>
+                    </div>
+
+                    <div class="hints-section">
+                        <h4>Contextual Hints</h4>
+                        <ul id="hints-list"></ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SYSTEM STATS TAB ==================== -->
+        <section id="stats-tab" class="tab-content">
+            <div class="card">
+                <h2 class="section-title"><i class="fas fa-chart-bar"></i> System Statistics</h2>
+
+                <button id="refresh-stats-btn" class="btn btn-secondary">
+                    <i class="fas fa-sync"></i> Refresh Stats
+                </button>
+
+                <div id="stats-result">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Problems</div>
+                            <div id="total-problems" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Active Agents</div>
+                            <div id="active-agents" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Memory Usage</div>
+                            <div id="memory-usage" class="stat-value">0 MB</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Vector Dimension</div>
+                            <div id="vector-dimension" class="stat-value">384</div>
+                        </div>
+                    </div>
+
+                    <div class="problem-types">
+                        <h4>Problem Types Distribution</h4>
+                        <div id="problem-types-chart"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== EVALUATION METRICS TAB ==================== -->
+        <section id="evaluation-tab" class="tab-content">
+            <div class="card">
+                <h2>📊 Evaluation Metrics</h2>
+                <p class="sub-text">Analyze how well the system performed for the last run.</p>
+
+                <div id="eval-summary" class="eval-section">
+                    <h3>Performance Summary</h3>
+                    <div class="eval-grid">
+                        <div class="eval-metric-card">
+                            <span class="metric-label">Accuracy</span>
+                            <span id="eval-accuracy" class="metric-value">—</span>
+                        </div>
+                        <div class="eval-metric-card">
+                            <span class="metric-label">Confidence</span>
+                            <span id="eval-confidence" class="metric-value">—</span>
+                        </div>
+                        <div class="eval-metric-card">
+                            <span class="metric-label">Latency</span>
+                            <span id="eval-latency" class="metric-value">—</span>
+                        </div>
+                        <div class="eval-metric-card">
+                            <span class="metric-label">Provider Used</span>
+                            <span id="eval-provider" class="metric-value">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="eval-rag-impact" class="eval-section">
+                    <h3>🧠 RAG Impact</h3>
+                    <p id="rag-score" class="rag-info">RAG not used yet.</p>
+                </div>
+
+                <div id="eval-comments" class="eval-section">
+                    <h3>📝 Evaluation Notes</h3>
+                    <div id="eval-feedback" class="eval-feedback-box">
+                        Run a problem to generate evaluation feedback.
+                    </div>
+                </div>
+        </section>
+
+        <!-- ==================== KNOWLEDGE CORPUS TAB ==================== -->
+        <section id="corpus-tab" class="tab-content">
+            <div class="card">
+                <h2 class="section-title"><i class="fas fa-database"></i> Knowledge Corpus Management</h2>
+                <p class="sub-text" style="color: var(--on-surface-2); margin-bottom: var(--sp-20);">
+                    Upload a custom JSON or JSONL file (e.g. GSM8K datasets) to serve as your meta-agent's knowledge base. 
+                    The system will index the problems into the RAG vector store dynamically.
+                </p>
+
+                <div class="input-group" style="margin-bottom: var(--sp-20);">
+                    <label for="corpus-file-input">Select JSON or JSONL Knowledge File:</label>
+                    <input type="file" id="corpus-file-input" accept=".json,.jsonl" style="padding: 12px; margin-top: 8px; cursor: pointer;">
+                </div>
+
+                <div class="button-group">
+                    <button id="upload-corpus-btn" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Upload & Index Corpus
+                    </button>
+                </div>
+
+                <div id="corpus-status-card" class="card fade-in" style="display: none; margin-top: var(--sp-24); background: rgba(124, 77, 255, 0.08); border-color: var(--primary);">
+                    <div style="display: flex; align-items: center; gap: var(--sp-12);">
+                        <div style="font-size: 24px; color: var(--primary);"><i class="fas fa-info-circle"></i></div>
+                        <div>
+                            <strong style="display: block; font-size: var(--fs-lg);">Corpus Status</strong>
+                            <span id="corpus-status-text" style="color: var(--on-surface-2);">No corpus uploaded.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="corpus-preview-section" style="margin-top: var(--sp-24);">
+                    <h4 style="margin-bottom: var(--sp-12);">Active Corpus Preview (<span id="corpus-preview-count">0</span> items loaded)</h4>
+                    <div id="corpus-preview-list" class="solution-box" style="max-height: 350px; overflow-y: auto; background: var(--surface-2); padding: var(--sp-16); border-radius: var(--r-md); border: 1px solid var(--border); font-family: monospace; font-size: var(--fs-sm); line-height: 1.5;">
+                        Loading current corpus...
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay">
+            <div class="loading-spinner-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Processing...</div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container"></div>
+
+    </div>
+
+    <footer class="footer">
+        <p>© 2025 Meta-Agent Math Debate System • Powered by AI & RAG</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

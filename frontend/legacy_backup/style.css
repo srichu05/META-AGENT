@@ -1,0 +1,366 @@
+/* ==========================================================================
+   Meta-Agent Math Debate System — Final UI v1
+   Mode: Auto Light/Dark • Glass B2 • Purple Accent
+   ========================================================================== */
+
+/* -------------------------------------------------
+   1) DESIGN TOKENS
+   ------------------------------------------------- */
+:root {
+    --primary: #7c4dff;
+    /* Purple A400 */
+    --primary-variant: #5e35b1;
+    /* Deep Purple */
+    --on-primary: #ffffff;
+
+    /* Dark Mode Defaults */
+    --bg: #0f172a;
+    --surface: rgba(255, 255, 255, 0.08);
+    --surface-2: rgba(255, 255, 255, 0.12);
+    --on-surface: #e2e8f0;
+    --on-surface-2: #94a3b8;
+
+    --border: rgba(255, 255, 255, 0.14);
+
+    --success: #43a047;
+    --warning: #fb8c00;
+    --error: #e53935;
+
+    --blur: 12px;
+    /* G2 */
+
+    --r-sm: 10px;
+    --r-md: 14px;
+    --r-lg: 18px;
+
+    --sp-8: 8px;
+    --sp-12: 12px;
+    --sp-16: 16px;
+    --sp-20: 20px;
+    --sp-24: 24px;
+    --sp-32: 32px;
+
+    --fs-sm: 12px;
+    --fs: 14.5px;
+    --fs-lg: 16px;
+    --fs-xl: 20px;
+    --fs-2xl: 26px;
+    --fs-3xl: 32px;
+
+    --font-sans: "Inter", "Geist", "SF Pro Text", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+    --number: #90caf9;
+    --operator: #ffcc80;
+}
+
+/* Auto Light Mode */
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #f8fafc;
+        --surface: rgba(255, 255, 255, 0.65);
+        --surface-2: rgba(255, 255, 255, 0.85);
+        --on-surface: #1e293b;
+        --on-surface-2: #475569;
+        --border: rgba(0, 0, 0, 0.12);
+    }
+}
+
+/* -------------------------------------------------
+   2) BASE
+   ------------------------------------------------- */
+html,
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--on-surface);
+    font-size: var(--fs);
+    -webkit-font-smoothing: antialiased;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: var(--sp-24);
+}
+
+/* -------------------------------------------------
+   3) HEADER
+   ------------------------------------------------- */
+.header {
+    background: var(--surface-2);
+    backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--sp-32);
+    margin: var(--sp-24) 0 var(--sp-32);
+}
+
+.header h1 {
+    margin: 0 0 var(--sp-8);
+    font-size: var(--fs-3xl);
+}
+
+.header p {
+    margin: 0;
+    color: var(--on-surface-2);
+}
+
+/* -------------------------------------------------
+   4) TABS (C1)
+   ------------------------------------------------- */
+.nav-tabs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--sp-12);
+    margin-bottom: var(--sp-24);
+}
+
+.tab-btn {
+    background: var(--surface);
+    color: var(--on-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: var(--sp-16);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.tab-btn.active {
+    background: var(--primary);
+    color: var(--on-primary);
+    border-color: transparent;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* -------------------------------------------------
+   5) CARDS (B2 Glass)
+   ------------------------------------------------- */
+.card {
+    background: var(--surface);
+    backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--sp-24);
+    margin-bottom: var(--sp-20);
+}
+
+/* -------------------------------------------------
+   6) FORMS
+   ------------------------------------------------- */
+.input-group textarea,
+.input-group input {
+    width: 100%;
+    background: var(--surface-2);
+    color: var(--on-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: var(--sp-16);
+    font-size: var(--fs-lg);
+    outline: none;
+}
+
+.input-group textarea:focus,
+.input-group input:focus {
+    border-color: var(--primary);
+}
+
+/* -------------------------------------------------
+   7) BUTTONS
+   ------------------------------------------------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    border-radius: var(--r-md);
+    padding: var(--sp-12) var(--sp-20);
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+.btn-secondary {
+    background: var(--surface-2);
+    color: var(--on-surface);
+    border: 1px solid var(--border);
+}
+
+/* -------------------------------------------------
+   8) SOLUTION RESULTS & HIGHLIGHT
+   ------------------------------------------------- */
+.number {
+    color: var(--number);
+    font-weight: 700;
+}
+
+.operator {
+    color: var(--operator);
+    font-weight: 700;
+}
+
+.step-marker {
+    background: rgba(124, 77, 255, .12);
+    padding: 2px 6px;
+    border-radius: 6px;
+}
+
+/* -------------------------------------------------
+   9) TOASTS (No animation)
+   ------------------------------------------------- */
+.toast {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    min-width: 300px;
+    background: var(--surface-2);
+    backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 10000;
+}
+
+.toast.success {
+    border-left: 4px solid var(--success);
+}
+
+.toast.error {
+    border-left: 4px solid var(--error);
+}
+
+/* -------------------------------------------------
+   10) LOADING OVERLAY
+   ------------------------------------------------- */
+#loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+    backdrop-filter: blur(var(--blur));
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-text {
+    color: var(--on-surface);
+    margin-top: 8px;
+}
+
+/* -------------------------------------------------
+   11) DEBATE TIMELINE + AGENT COLORS
+   ------------------------------------------------- */
+.debate-timeline {
+    display: grid;
+    gap: 14px;
+    margin-top: 12px;
+}
+
+.agent-contribution {
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    backdrop-filter: blur(var(--blur));
+    padding: var(--sp-12) var(--sp-16);
+    border-left: 4px solid var(--agent-color, var(--primary));
+}
+
+.agent-name {
+    font-weight: 700;
+}
+
+/* -------------------------------------------------
+   12) FOOTER (A4)
+   ------------------------------------------------- */
+.footer {
+    margin-top: var(--sp-32);
+    padding: var(--sp-16);
+    text-align: center;
+    background: var(--primary);
+    color: var(--on-primary);
+    border-radius: var(--r-md);
+}
+
+/* -------------------------------------------------
+   Provider Footer (Static, Synced with script.js)
+   ------------------------------------------------- */
+.provider-footer {
+    margin-top: var(--sp-16);
+    padding-top: var(--sp-12);
+    border-top: 1px solid var(--border);
+    font-size: var(--fs-sm);
+    color: var(--on-surface-2);
+    text-align: right;
+    opacity: 0.85;
+}
+
+.provider-footer strong {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* -------------------------------------------------
+   Evaluation Metrics UI
+   ------------------------------------------------- */
+.eval-section {
+    margin-top: var(--sp-24);
+}
+
+.eval-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--sp-16);
+    margin-top: var(--sp-16);
+}
+
+.eval-metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: var(--sp-16);
+    text-align: center;
+}
+
+.metric-label {
+    font-size: var(--fs-sm);
+    color: var(--on-surface-2);
+}
+
+.metric-value {
+    margin-top: 6px;
+    font-size: var(--fs-xl);
+    font-weight: 700;
+    color: var(--primary);
+    display: block;
+}
+
+.eval-feedback-box {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: var(--sp-16);
+    color: var(--on-surface);
+    min-height: 70px;
+}
+
+.rag-info {
+    font-size: var(--fs-lg);
+    font-weight: 600;
+    color: var(--on-surface-2);
+}
