@@ -70,6 +70,7 @@ class MetadataLookupService:
                         score=score,
                         retrieval_source=default_source,
                         upload_timestamp=doc.uploaded_at.isoformat() if doc and doc.uploaded_at else None,
+                        user_id=getattr(doc, "user_id", None) if doc else None,
                     )
                 )
 

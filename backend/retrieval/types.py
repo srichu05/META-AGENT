@@ -22,11 +22,13 @@ class RetrievedChunk:
     score: float
     retrieval_source: str = "faiss"  # "faiss", "bm25", or "hybrid"
     upload_timestamp: Optional[str] = None
+    user_id: Optional[str] = None
 
     def to_dict(self) -> Dict[str, object]:
         return {
             "chunk_id": self.chunk_id,
             "document_id": self.document_id,
+            "user_id": self.user_id,
             "filename": self.filename,
             "file_type": self.file_type,
             "page_number": self.page_number,

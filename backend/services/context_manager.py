@@ -77,17 +77,26 @@ class ContextManager:
         current_length = 0
 
         for idx, chunk in enumerate(filtered_chunks, start=1):
+            clean_content = chunk.content.replace("\x00", "").strip()
+            # Delimiter collision defense
+            clean_content = clean_content.replace("</RETRIEVED_CONTEXT>", "[/RETRIEVED_CONTEXT]")
+            clean_content = clean_content.replace("</DOCUMENT_CONTEXT>", "[/DOCUMENT_CONTEXT]")
+            clean_content = clean_content.replace("<SYSTEM_PROMPT>", "[SYSTEM_PROMPT]")
+
+            safe_filename = (chunk.filename or "unknown").replace("\x00", "").strip()
+            safe_heading = (chunk.section_heading or "").replace("\x00", "").strip() if chunk.section_heading else None
+
             location_str = ""
             if chunk.page_number is not None:
                 location_str += f" (p. {chunk.page_number})"
-            if chunk.section_heading:
-                location_str += f" [section: {chunk.section_heading}]"
+            if safe_heading:
+                location_str += f" [section: {safe_heading}]"
 
-            citation_label = f"[{chunk.filename}{location_str}]"
+            citation_label = f"[{safe_filename}{location_str}]"
             block = (
                 f"--- Reference Context #{idx} {citation_label} ---\n"
-                f"File: {chunk.filename} | Type: {chunk.file_type} | Similarity Score: {chunk.score:.4f}\n"
-                f"Content:\n{chunk.content.strip()}\n"
+                f"File: {safe_filename} | Type: {chunk.file_type} | Similarity Score: {chunk.score:.4f}\n"
+                f"Content:\n{clean_content}\n"
             )
 
             if current_length + len(block) > self.max_context_length and accepted_chunks:

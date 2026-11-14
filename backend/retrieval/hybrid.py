@@ -35,10 +35,11 @@ class HybridRetriever:
         self.last_rerank_status: str = "disabled"
         self.last_empty_reason: Optional[str] = None
 
-    def retrieve(self, query: str, top_k: int = 5) -> Tuple[List[RetrievedChunk], bool, bool]:
+    def retrieve(self, query: str, top_k: int = 5, user_id: Optional[str] = None) -> Tuple[List[RetrievedChunk], bool, bool]:
         """
         Executes hybrid retrieval over FAISS and BM25, merges scores via RRF,
-        hydrates metadata from PostgreSQL, and applies optional Cohere reranking.
+        hydrates metadata from PostgreSQL, applies user-level retrieval isolation,
+        and runs optional Cohere reranking.
         Returns: (chunks, hybrid_used, rerank_used)
         """
         self.last_error = None
@@ -106,6 +107,11 @@ class HybridRetriever:
         # Update retrieval_source tag on chunks
         for chunk in hydrated_chunks:
             chunk.retrieval_source = source_tags.get(chunk.vector_index, "faiss")
+
+        # Apply server-side user retrieval isolation before reranking
+        if user_id:
+            from security.authorization import filter_chunks_for_user
+            hydrated_chunks = filter_chunks_for_user(hydrated_chunks, user_id=user_id)
 
         # 5. Cohere Reranking
         final_chunks = self.reranker.rerank(query, hydrated_chunks, top_k=top_k)
