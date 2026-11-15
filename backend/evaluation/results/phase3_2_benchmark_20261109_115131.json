@@ -1,0 +1,261 @@
+{
+  "total_evaluated": 3,
+  "completed_count": 3,
+  "inconclusive_count": 0,
+  "failed_count": 0,
+  "average_scores": {
+    "math_correctness": 1.0,
+    "reasoning_validity": 0.95,
+    "groundedness": 0.9,
+    "citation_quality": 0.85,
+    "completeness": 1.0,
+    "overall_score": 0.95
+  },
+  "judge_correct_count": 3,
+  "judge_missed_correct_count": 0,
+  "solver_agreement_avg": 0.7778,
+  "cached_results_count": 1,
+  "fresh_results_count": 2,
+  "evaluation_mode": "llm_judge",
+  "evaluation_model": "default",
+  "evaluation_provider": "GROQ",
+  "results": [
+    {
+      "evaluation_id": "eval_cc699a2895804dda",
+      "question_id": "gsm8k_001",
+      "question": "Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May?",
+      "reference_answer": "72",
+      "final_answer": "Natalia sold 48 clips in April and 24 in May. Total: 48 + 24 = 72 clips.",
+      "math_correctness": {
+        "score": 1.0,
+        "status": "completed",
+        "reasoning": "Deterministic verification (numeric): Numeric match from candidate tokens: 72.0 == 72.0.",
+        "evidence": [
+          "extracted_pred=72.0",
+          "extracted_ref=72.0"
+        ]
+      },
+      "reasoning_validity": {
+        "score": 0.95,
+        "status": "completed",
+        "reasoning": "Algebraic steps are fully sound.",
+        "evidence": []
+      },
+      "groundedness": {
+        "score": 0.9,
+        "status": "completed",
+        "reasoning": "Grounded in context.",
+        "evidence": []
+      },
+      "citation_quality": {
+        "score": 0.85,
+        "status": "completed",
+        "reasoning": "Citations are relevant.",
+        "evidence": []
+      },
+      "completeness": {
+        "score": 1.0,
+        "status": "completed",
+        "reasoning": "Fully answered problem constraints.",
+        "evidence": []
+      },
+      "solver_agreement": {
+        "solver_answers": {
+          "solver_1": "72",
+          "solver_2": "72",
+          "solver_3": "72"
+        },
+        "agreement_count": 3,
+        "total_solvers": 3,
+        "agreement_ratio": 1.0,
+        "majority_answer": "72",
+        "divergent_solvers": [],
+        "analysis_notes": "3/3 solvers agree on answer: '72'."
+      },
+      "judge_reliability": {
+        "judge_selected_agent": "solver_1",
+        "judge_selected_answer": "72",
+        "judge_selected_correct": true,
+        "correct_solvers": [
+          "solver_1",
+          "solver_2",
+          "solver_3"
+        ],
+        "any_solver_correct": true,
+        "judge_missed_correct": false,
+        "judge_reasoning_quality": 0.95,
+        "analysis_notes": "Judge selected 'solver_1' (correct=True). Solvers producing correct answers: ['solver_1', 'solver_2', 'solver_3'].",
+        "status": "completed"
+      },
+      "overall_assessment": "Clear, valid step-by-step reasoning and exact correctness.",
+      "overall_score": 0.95,
+      "evaluation_status": "completed",
+      "evaluation_mode": "llm_judge",
+      "evaluation_model": "llama-3.3-70b-versatile",
+      "evaluation_provider": "GROQ",
+      "failure_reason": null,
+      "is_cached_result": false,
+      "cache_hit_type": null,
+      "created_at": "2026-11-09T11:51:31.104529"
+    },
+    {
+      "evaluation_id": "eval_e69ca5a2c4ec4ab2",
+      "question_id": "gsm8k_002",
+      "question": "Weng earns $12 an hour for babysitting. Yesterday, she babysat for 5 hours. Yesterday, she also earned $15 for walking dogs. How much money did Weng earn altogether yesterday?",
+      "reference_answer": "75",
+      "final_answer": "Weng earned $12 * 5 = $60 from babysitting and $15 from walking dogs. Total = 75.",
+      "math_correctness": {
+        "score": 1.0,
+        "status": "completed",
+        "reasoning": "Deterministic verification (numeric): Numeric match from candidate tokens: 75.0 == 75.0.",
+        "evidence": [
+          "extracted_pred=75.0",
+          "extracted_ref=75.0"
+        ]
+      },
+      "reasoning_validity": {
+        "score": 0.95,
+        "status": "completed",
+        "reasoning": "Algebraic steps are fully sound.",
+        "evidence": []
+      },
+      "groundedness": {
+        "score": 0.9,
+        "status": "completed",
+        "reasoning": "Grounded in context.",
+        "evidence": []
+      },
+      "citation_quality": {
+        "score": 0.85,
+        "status": "completed",
+        "reasoning": "Citations are relevant.",
+        "evidence": []
+      },
+      "completeness": {
+        "score": 1.0,
+        "status": "completed",
+        "reasoning": "Fully answered problem constraints.",
+        "evidence": []
+      },
+      "solver_agreement": {
+        "solver_answers": {
+          "solver_1": "75",
+          "solver_2": "60",
+          "solver_3": "75"
+        },
+        "agreement_count": 2,
+        "total_solvers": 3,
+        "agreement_ratio": 0.6667,
+        "majority_answer": "75",
+        "divergent_solvers": [
+          "solver_2"
+        ],
+        "analysis_notes": "2/3 solvers agree on answer: '75'. Divergent solvers: ['solver_2']."
+      },
+      "judge_reliability": {
+        "judge_selected_agent": "solver_1",
+        "judge_selected_answer": "75",
+        "judge_selected_correct": true,
+        "correct_solvers": [
+          "solver_1",
+          "solver_3"
+        ],
+        "any_solver_correct": true,
+        "judge_missed_correct": false,
+        "judge_reasoning_quality": 0.92,
+        "analysis_notes": "Judge selected 'solver_1' (correct=True). Solvers producing correct answers: ['solver_1', 'solver_3'].",
+        "status": "completed"
+      },
+      "overall_assessment": "Clear, valid step-by-step reasoning and exact correctness.",
+      "overall_score": 0.95,
+      "evaluation_status": "completed",
+      "evaluation_mode": "llm_judge",
+      "evaluation_model": "llama-3.3-70b-versatile",
+      "evaluation_provider": "GROQ",
+      "failure_reason": null,
+      "is_cached_result": true,
+      "cache_hit_type": "exact",
+      "created_at": "2026-11-09T11:51:31.105602"
+    },
+    {
+      "evaluation_id": "eval_5507e773f1d0451a",
+      "question_id": "gsm8k_003",
+      "question": "Solve for x in the linear equation: 4x - 12 = 28.",
+      "reference_answer": "10",
+      "final_answer": "4x - 12 = 28 -> 4x = 40 -> x = 10.",
+      "math_correctness": {
+        "score": 1.0,
+        "status": "completed",
+        "reasoning": "Deterministic verification (numeric): Numeric match from candidate tokens: 10.0 == 10.0.",
+        "evidence": [
+          "extracted_pred=10.0",
+          "extracted_ref=10.0"
+        ]
+      },
+      "reasoning_validity": {
+        "score": 0.95,
+        "status": "completed",
+        "reasoning": "Algebraic steps are fully sound.",
+        "evidence": []
+      },
+      "groundedness": {
+        "score": 0.9,
+        "status": "completed",
+        "reasoning": "Grounded in context.",
+        "evidence": []
+      },
+      "citation_quality": {
+        "score": null,
+        "status": "not_applicable",
+        "reasoning": "No citations provided.",
+        "evidence": []
+      },
+      "completeness": {
+        "score": 1.0,
+        "status": "completed",
+        "reasoning": "Fully answered problem constraints.",
+        "evidence": []
+      },
+      "solver_agreement": {
+        "solver_answers": {
+          "solver_1": "10",
+          "solver_2": "10",
+          "solver_3": "8"
+        },
+        "agreement_count": 2,
+        "total_solvers": 3,
+        "agreement_ratio": 0.6667,
+        "majority_answer": "10",
+        "divergent_solvers": [
+          "solver_3"
+        ],
+        "analysis_notes": "2/3 solvers agree on answer: '10'. Divergent solvers: ['solver_3']."
+      },
+      "judge_reliability": {
+        "judge_selected_agent": "solver_1",
+        "judge_selected_answer": "10",
+        "judge_selected_correct": true,
+        "correct_solvers": [
+          "solver_1",
+          "solver_2"
+        ],
+        "any_solver_correct": true,
+        "judge_missed_correct": false,
+        "judge_reasoning_quality": 0.96,
+        "analysis_notes": "Judge selected 'solver_1' (correct=True). Solvers producing correct answers: ['solver_1', 'solver_2'].",
+        "status": "completed"
+      },
+      "overall_assessment": "Clear, valid step-by-step reasoning and exact correctness.",
+      "overall_score": 0.95,
+      "evaluation_status": "completed",
+      "evaluation_mode": "llm_judge",
+      "evaluation_model": "llama-3.3-70b-versatile",
+      "evaluation_provider": "GROQ",
+      "failure_reason": null,
+      "is_cached_result": false,
+      "cache_hit_type": null,
+      "created_at": "2026-11-09T11:51:31.106677"
+    }
+  ],
+  "timestamp": "2026-11-09T11:51:31.106677"
+}
