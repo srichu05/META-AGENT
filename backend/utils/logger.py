@@ -105,6 +105,12 @@ def setup_logger(name: str, level: Optional[int] = None) -> logging.Logger:
     
     # Prevent logging from propagating to root logger
     logger.propagate = False
+
+    try:
+        from utils.observability import SensitiveDataFilter
+        logger.addFilter(SensitiveDataFilter())
+    except Exception:
+        pass
     
     return logger
 
