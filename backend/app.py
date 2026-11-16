@@ -22,43 +22,55 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from models.meta_agent import MetaAgent
 from utils.data_processor import DataProcessor
 from utils.logger import setup_logger
-from config import SYSTEM_CONFIG
+from utils.observability import init_observability
+from config import SYSTEM_CONFIG, get_cors_origins, validate_startup_config
 from database import init_database
 from api.documents import documents_blueprint
 from api.retrieval import retrieval_blueprint
 from api.debate_api import graph_debate_blueprint
 from api.evaluation_api import evaluation_blueprint
+from api.health import health_blueprint
+from api.auth import auth_blueprint
 
 # --- Flask App Initialization ---
 app = Flask(__name__)
+
+# Connection pooling options
+engine_options = {
+    "pool_pre_ping": True,
+    "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "1800")),
+}
+if not SYSTEM_CONFIG["database_url"].startswith("sqlite"):
+    engine_options.update({
+        "pool_size": int(os.getenv("DB_POOL_SIZE", "10")),
+        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "20")),
+        "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
+    })
+
 app.config.update(
     SECRET_KEY=SYSTEM_CONFIG["secret_key"],
     SQLALCHEMY_DATABASE_URI=SYSTEM_CONFIG["database_url"],
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    SQLALCHEMY_ENGINE_OPTIONS=engine_options,
 )
 init_database(app)
+init_observability(app)
+
 app.config["MAX_CONTENT_LENGTH"] = SYSTEM_CONFIG["max_upload_file_size_bytes"]
 app.register_blueprint(documents_blueprint)
 app.register_blueprint(retrieval_blueprint)
 app.register_blueprint(graph_debate_blueprint)
 app.register_blueprint(evaluation_blueprint)
+app.register_blueprint(health_blueprint)
+app.register_blueprint(auth_blueprint)
 
-
-
-# CORS (single init is enough)
-allowed_origins = [
-    "http://127.0.0.1:5501",
-    "http://127.0.0.1:5500",
-    "http://localhost:5501",
-    "http://localhost:5500",
-    "*"
-]
+# CORS configuration
 CORS(
     app,
-    origins=allowed_origins,
+    origins=get_cors_origins(),
     methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-    expose_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Authorization", "X-Correlation-ID"],
+    expose_headers=["Content-Type", "X-Correlation-ID"],
     supports_credentials=True,
     max_age=3600,
 )
@@ -125,6 +137,15 @@ def initialize_app() -> bool:
     try:
         logger.info("🚀 Initializing Meta-Agent Math Debate System (API-Only)...")
 
+        # Startup configuration and safety validation
+        config_status = validate_startup_config()
+        if not config_status["valid"]:
+            logger.error(f"❌ Configuration validation errors: {config_status['errors']}")
+            if config_status.get("is_production"):
+                raise RuntimeError(f"Cannot start in production mode with configuration errors: {config_status['errors']}")
+        if config_status.get("warnings"):
+            logger.warning(f"⚠️ Configuration warnings: {config_status['warnings']}")
+
         # Warn if external cloud providers not set; allow fallbacks if supported
         required_env_vars = ["GEMINI_API_KEY", "GROQ_API_KEY", "OPENROUTER_API_KEY", "COHERE_API_KEY"]
         missing_vars = [v for v in required_env_vars if not os.getenv(v)]
@@ -133,7 +154,6 @@ def initialize_app() -> bool:
                 "⚠️ Missing API keys for cloud providers: %s — proceeding with active/fallback providers.",
                 ", ".join(missing_vars),
             )
-
 
         data_processor = DataProcessor()
         meta_agent = MetaAgent()
@@ -292,7 +312,7 @@ def solve_problem():
 
     except Exception as e:
         logger.error(f"✗ Error in /api/solve: {str(e)}", exc_info=True)
-        return jsonify({"success": False, "error": str(e), "traceback": traceback.format_exc()}), 500
+        return jsonify({"success": False, "error": "Internal computation error occurred in solver."}), 500
 
 
 @app.route("/api/debate", methods=["POST"])
@@ -351,7 +371,7 @@ def run_debate():
                 "error": str(e),
                 "debate_winner": "Error",
                 "final_solution": f"Exception: {str(e)}",
-                "traceback": traceback.format_exc(),
+                "error_type": "ServerException",
             }
         ), 500
 
@@ -569,8 +589,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     port = int(os.getenv("PORT", 5000))
-    debug_mode = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
     flask_env = os.getenv("FLASK_ENV", "development")
+    is_production = flask_env.lower() in ("production", "prod")
+    debug_mode = False if is_production else (os.getenv("DEBUG", "False").lower() in ("true", "1", "yes"))
 
     logger.info("=" * 60)
     logger.info(f"🌐 Starting API-Only Flask Backend on http://0.0.0.0:{port}")

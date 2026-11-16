@@ -1,11 +1,13 @@
-"""REST endpoints for Draft 2 retrieval testing and context inspection."""
+"""REST endpoints for retrieval testing, context inspection, and status."""
 
+import os
 from flask import Blueprint, current_app, jsonify, request
 
-from retrieval.service import RetrievalService
-from models.document import Document, DocumentChunk
-from ingestion.faiss_store import FAISSVectorStore
 from config import INGESTION_CONFIG, SYSTEM_CONFIG
+from ingestion.faiss_store import FAISSVectorStore
+from models.document import Document, DocumentChunk
+from retrieval.service import RetrievalService
+from security import get_current_user, rate_limit, require_auth
 
 retrieval_blueprint = Blueprint("retrieval", __name__, url_prefix="/retrieval")
 
@@ -19,17 +21,34 @@ def _service() -> RetrievalService:
 
 
 @retrieval_blueprint.route("/query", methods=["POST"])
+@require_auth()
+@rate_limit(scope="debate")
 def query_retrieval():
-    """Query the retrieval pipeline and return formatted context, chunks, and citations."""
+    """Query the retrieval pipeline with user isolation and return formatted context."""
     data = request.get_json(force=True) or {}
     query = (data.get("query") or data.get("problem") or "").strip()
     if not query:
         return jsonify({"success": False, "error": "Query string is required."}), 400
 
-    top_k = int(data.get("top_k", SYSTEM_CONFIG.get("top_k_retrieval", 5)))
+    max_len = int(os.getenv("MAX_QUERY_LENGTH", "5000"))
+    if len(query) > max_len:
+        return jsonify({
+            "success": False,
+            "error": f"Query length ({len(query)}) exceeds maximum allowed ({max_len} characters).",
+        }), 400
 
     try:
-        context = _service().retrieve(query, top_k=top_k)
+        max_k = int(os.getenv("MAX_TOP_K", "50"))
+        top_k = int(data.get("top_k", SYSTEM_CONFIG.get("top_k_retrieval", 5)))
+        top_k = max(1, min(max_k, top_k))
+    except (ValueError, TypeError):
+        top_k = 5
+
+    current_user = get_current_user() or {}
+    user_id = current_user.get("user_id")
+
+    try:
+        context = _service().retrieve(query, top_k=top_k, user_id=user_id)
         return jsonify({"success": True, "result": context.to_dict()}), 200
     except Exception as error:
         current_app.logger.exception("Retrieval query failed unexpectedly")
@@ -37,6 +56,7 @@ def query_retrieval():
 
 
 @retrieval_blueprint.route("/status", methods=["GET"])
+@require_auth()
 def get_retrieval_status():
     """Inspect retrieval index status, FAISS vector count, and database chunk count."""
     try:
