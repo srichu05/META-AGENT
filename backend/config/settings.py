@@ -137,6 +137,33 @@ INGESTION_CONFIG: Dict[str, Any] = {
     "document_list_limit": int(os.getenv("DOCUMENT_LIST_LIMIT", "50")),
 }
 
+CACHE_CONFIG: Dict[str, Any] = {
+    "enabled": _as_bool(os.getenv("SEMANTIC_CACHE_ENABLED"), default=True),
+    "similarity_threshold": float(os.getenv("SEMANTIC_CACHE_SIMILARITY_THRESHOLD", "0.92")),
+    "exact_match_enabled": _as_bool(os.getenv("SEMANTIC_CACHE_EXACT_MATCH_ENABLED"), default=True),
+    "ttl_seconds": int(os.getenv("SEMANTIC_CACHE_TTL_SECONDS", str(7 * 24 * 3600))),
+    "max_entries": int(os.getenv("SEMANTIC_CACHE_MAX_ENTRIES", "1000")),
+    "namespace": os.getenv("SEMANTIC_CACHE_NAMESPACE", "math_debate"),
+    "schema_version": "v1.0",
+    "eviction_policy": os.getenv("SEMANTIC_CACHE_EVICTION_POLICY", "lru"),
+    "require_grounded_citations": _as_bool(os.getenv("SEMANTIC_CACHE_REQUIRE_GROUNDED_CITATIONS"), default=True),
+}
+
+EVALUATOR_CONFIG: Dict[str, Any] = {
+    "provider": os.getenv("EVALUATOR_PROVIDER", "GROQ"),
+    "model": os.getenv("EVALUATOR_MODEL"),
+    "fallback_order": [
+        p.strip().upper()
+        for p in os.getenv("EVALUATOR_FALLBACK_ORDER", "GROQ,GEMINI,OPENROUTER").split(",")
+        if p.strip()
+    ],
+    "temperature": float(os.getenv("EVALUATOR_TEMPERATURE", "0.1")),
+    "max_retries": int(os.getenv("EVALUATOR_MAX_RETRIES", "2")),
+    "timeout_seconds": int(os.getenv("EVALUATOR_TIMEOUT_SECONDS", "30")),
+    "deterministic_verification_enabled": _as_bool(os.getenv("EVALUATOR_DETERMINISTIC_VERIFY"), default=True),
+    "independence_check_enabled": _as_bool(os.getenv("EVALUATOR_CHECK_INDEPENDENCE"), default=True),
+}
+
 AGENT_ROLES = {
     "solver_1": "Analytical Math Solver - Focuses on step-by-step algebraic solutions",
     "solver_2": "Creative Problem Solver - Looks for alternative approaches and shortcuts",

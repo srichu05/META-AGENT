@@ -123,6 +123,18 @@ RAG_CONFIG = {
     "embeddings_cache": "./database/embeddings_cache.pkl"
 }
 
+CACHE_CONFIG = {
+    "enabled": os.getenv("SEMANTIC_CACHE_ENABLED", "True").lower() in ("true", "1", "yes"),
+    "similarity_threshold": float(os.getenv("SEMANTIC_CACHE_SIMILARITY_THRESHOLD", "0.92")),
+    "exact_match_enabled": os.getenv("SEMANTIC_CACHE_EXACT_MATCH_ENABLED", "True").lower() in ("true", "1", "yes"),
+    "ttl_seconds": int(os.getenv("SEMANTIC_CACHE_TTL_SECONDS", str(7 * 24 * 3600))),
+    "max_entries": int(os.getenv("SEMANTIC_CACHE_MAX_ENTRIES", "1000")),
+    "namespace": os.getenv("SEMANTIC_CACHE_NAMESPACE", "math_debate"),
+    "schema_version": "v1.0",
+    "eviction_policy": os.getenv("SEMANTIC_CACHE_EVICTION_POLICY", "lru"),
+    "require_grounded_citations": os.getenv("SEMANTIC_CACHE_REQUIRE_GROUNDED_CITATIONS", "True").lower() in ("true", "1", "yes"),
+}
+
 # ═══════════════════════════════════════════════════════════════════════
 # ✅ CONFIG VALIDATION HELPERS
 # ═══════════════════════════════════════════════════════════════════════
