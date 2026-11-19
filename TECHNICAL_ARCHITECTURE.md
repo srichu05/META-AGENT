@@ -51,10 +51,12 @@ Reflection Agent Node (Cross-solution contradiction & error audit)
     ↓
 Judge Agent Node (Multi-criteria scoring & best solution selection)
     ↓
-Citation Generator Node (Source document attribution)
+Citation Generator Node (Source document attribution with anti-fabrication grounding filter)
     ↓
 Final Answer + RAG Citations
 ```
+
+- **Execution Mode Observability**: `MathDebateGraph` populates `execution_mode` (`"langgraph"` vs `"builtin_dag"`), `partial_execution` (boolean flag set if intermediate nodes catch exceptions), and `failed_node` (tracking the exact node failure). Intermediate solver outputs are preserved even if later stages fail.
 
 ---
 
@@ -68,9 +70,10 @@ All cloud LLM and reranker calls are routed authoritatively through `ProviderRou
   - `OpenRouterAdapter`: Diverse reasoning solver (`deepseek/deepseek-r1-distill-llama-70b`)
   - `CohereAdapter`: Reranking engine (`rerank-v3.5`)
 - **Resilience Features**:
-  - Automatic cross-provider fallback (`GEMINI -> GROQ -> OPENROUTER`)
-  - Response normalization into standardized `ProviderResponse` dataclass
-  - Latency, token usage, and error metrics tracked via `ProviderMetrics`
+  - Automatic cross-provider fallback (`GEMINI -> GROQ -> OPENROUTER`) with finite deduplicated traversal to prevent infinite fallback loops.
+  - Transparent fallback observability: `ProviderResponse` records `intended_provider`, `actual_provider`, `actual_model`, `fallback_occurred`, `fallback_reason`, `attempts`, and standardized `error_category` (`AUTHENTICATION_ERROR`, `RATE_LIMIT`, `MODEL_NOT_FOUND`, `TIMEOUT`, `CONNECTION_ERROR`, `SERVER_ERROR`, `PROVIDER_ERROR`).
+  - Response normalization into standardized `ProviderResponse` dataclass.
+  - Latency, token usage, and error metrics tracked via `ProviderMetrics`.
 
 ---
 
@@ -86,8 +89,11 @@ All cloud LLM and reranker calls are routed authoritatively through `ProviderRou
    - Computes BM25 keyword frequency scores ($w=0.3$).
    - Merges candidate rankings using Reciprocal Rank Fusion ($RRF = \sum \frac{w}{60 + \text{rank}}$).
    - Re-ranks top candidates via Cohere Rerank API.
+   - Observability: `RetrievedContext` exposes `error`, `rerank_status` (`"disabled"`, `"success"`, `"fallback"`, `"skipped_missing_credentials"`, `"skipped_disabled"`, `"skipped_empty"`), and explicit diagnostics for 0-result states (`vector_index_empty`, `no_matches_found`, `database_query_error`).
 3. **Context Manager**:
    - Deduplicates chunks, filters below similarity threshold, and formats structured prompt context within configurable character/token budget (`max_context_length=4000`).
+4. **Citation Grounding**:
+   - Anti-fabrication lexical/marker grounding filter in `citation_generator_node` ensures citations are only attached when candidate chunks were genuinely utilized in the final answer.
 
 ---
 
@@ -98,18 +104,22 @@ All cloud LLM and reranker calls are routed authoritatively through `ProviderRou
   - **Answer Relevance**: Measures semantic alignment between user question and final answer.
   - **Context Precision**: Measures rank positioning of relevant context chunks.
   - **Context Recall**: Measures coverage of reference answer claims in context.
+  - **Mode Transparency**: Explicitly tags `evaluation_mode` (`"genuine_ragas"`, `"heuristic"`, `"deterministic"`, or `"mock"`) and `ragas_installed` so heuristic metrics are never misreported as genuine RAGAS.
 - **GSM8K Benchmark Harness** (`backend/evaluation/dataset.py`, `backend/evaluation/benchmark_runner.py`):
   - Curated 10-problem GSM8K dataset subset with reference answers.
   - Executes questions end-to-end through `MathDebateGraph`, capturing all intermediate solver states, reflection notes, and judge decisions.
-  - Exports aggregated reports in JSON and CSV formats.
+  - Exports aggregated reports in JSON and CSV formats with evaluation mode metadata.
 - **Evaluation REST Endpoints**:
   - `POST /api/evaluation/benchmark`: Triggers benchmark run over $N$ items.
   - `GET /api/evaluation/benchmark`: Returns cached or fresh benchmark metrics report.
+  - `GET /api/evaluation/status`: Returns evaluation subsystem mode, library availability, and descriptions.
 
 ---
 
 ## 7. Database Architecture
 
-- **`documents`**: Tracks uploaded files, file hashes, MIME types, processing status, and OCR metadata.
+- **Migrations Repository**: Managed via Flask-Migrate / Alembic under `backend/migrations/` (`b4131a3fb826_create_documents_and_chunks_schema.py`). Destructive auto-drops are prevented across production and testing lifecycles.
+- **`documents`**: Tracks uploaded files, file hashes, MIME types, processing status, and text length.
 - **`document_chunks`**: Stores chunk text, character boundaries, section headings, page numbers, and deterministic `vector_index` pointers mapping to FAISS.
+- **`student`**: Preserved legacy schema table for student interactions.
 - **`system_settings`**: Key-value runtime configuration persistence.
